@@ -1,3 +1,4 @@
+ HEAD
 # Remote Internship Management Platform (RIMP)
 
 A comprehensive full-stack platform for managing remote internships with modern technologies and professional design.
@@ -414,3 +415,7 @@ For issues and questions, please open an issue on GitHub or contact the developm
 ---
 
 **Built with ❤️ for remote internship management**
+=======
+# RIMP
+(Remote internship management platform)
+>>>>>>> 4d2bc127ccf20cd3d3173d3c65900c78450d6ac6
