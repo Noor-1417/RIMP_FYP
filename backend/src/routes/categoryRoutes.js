@@ -7,6 +7,7 @@ const {
   updateCategory,
   deleteCategory,
   enrollCategory,
+  verifyPayment,
 } = require('../controllers/categoryController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -15,6 +16,7 @@ router.get('/', getAllCategories);
 router.get('/:id', getCategory);
 
 // Protected routes
+router.post('/verify-payment', protect, verifyPayment);
 router.post('/:id/enroll', protect, enrollCategory);
 
 // Admin routes

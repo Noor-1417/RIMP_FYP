@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const StudentApplication = require('../models/StudentApplication');
 const { generateToken } = require('../utils/tokenUtils');
 
 // @desc    Register user
@@ -35,13 +36,25 @@ exports.register = async (req, res, next) => {
       isVerified: false,
     });
 
+    // Automatically start free trial for new users
+    user.startFreeTrial();
+    await user.save();
+
     const token = generateToken(user);
 
+    // New users should complete CV first — send frontend to CV builder
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'User registered successfully. Free trial started!',
       token,
       user: user.getPublicProfile(),
+      redirectTo: 'cv-builder',
+      subscription: {
+        subscriptionStatus: user.subscriptionStatus,
+        trialEndsAt: user.trialEndsAt,
+        trialDays: 7,
+        message: 'You have 7 days of free trial. Upgrade to premium to unlock all features!',
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -92,11 +105,22 @@ exports.login = async (req, res, next) => {
 
     const token = generateToken(user);
 
+    // Determine redirect for student users based on whether they have submitted a CV
+    let redirectTo = 'intern-dashboard';
+    if (user.role === 'intern') {
+      const app = await StudentApplication.findOne({ user: user._id });
+      redirectTo = app ? 'intern-dashboard' : 'cv-builder';
+    } else if (user.role === 'admin') {
+      // Direct admins to the admin dashboard route
+      redirectTo = 'admin-dashboard';
+    }
+
     res.status(200).json({
       success: true,
       message: 'Login successful',
       token,
       user: user.getPublicProfile(),
+      redirectTo,
     });
   } catch (error) {
     res.status(500).json({

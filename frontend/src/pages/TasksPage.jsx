@@ -9,6 +9,7 @@ export const TasksPage = () => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export const TasksPage = () => {
         setTasks(data.data || data);
       } catch (err) {
         console.error(err);
+        setError('Failed to load tasks. Please refresh the page.');
         setTasks([]);
       } finally {
         setLoading(false);
@@ -38,9 +40,15 @@ export const TasksPage = () => {
     <div className="p-6">
       <h2 className="text-2xl font-semibold mb-4">My Tasks</h2>
       {loading ? (
-        <p>Loading...</p>
+        <div className="py-12 text-center">
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
+        </div>
+      ) : error ? (
+        <div className="p-6 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+          {error}
+        </div>
       ) : tasks.length === 0 ? (
-        <p>No tasks assigned yet.</p>
+        <p className="text-gray-600">No tasks assigned yet.</p>
       ) : (
         <div className="grid gap-4">
           {tasks.map((t) => (

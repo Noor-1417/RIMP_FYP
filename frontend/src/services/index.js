@@ -79,7 +79,7 @@ export const notificationService = {
   delete: (id) => api.delete(`/notifications/${id}`),
 };
 
-export default {
+const services = {
   authService,
   adminService,
   categoryService,
@@ -90,3 +90,5 @@ export default {
   notificationService,
   storageService,
 };
+
+export default services;

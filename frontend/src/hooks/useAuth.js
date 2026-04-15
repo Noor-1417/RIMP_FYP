@@ -24,13 +24,13 @@ export const useAuth = () => {
     };
 
     initAuth();
-  }, []);
+  }, [setUser]);
 
   const login = async (email, password) => {
     try {
       setLoading(true);
       const response = await authService.login({ email, password });
-      const { user, token } = response.data;
+      const { user, token, redirectTo } = response.data;
 
       if (!user || !token) {
         throw new Error('Invalid response: missing user or token');
@@ -44,7 +44,7 @@ export const useAuth = () => {
       try { localStorage.setItem('token', token); localStorage.setItem('user', JSON.stringify(user)); } catch (e) {}
 
       setUser(user, token);
-      return { success: true, user };
+      return { success: true, user, redirectTo };
     } catch (error) {
       const message = error.response?.data?.message || error.message || 'Login failed';
       setError(message);
@@ -59,7 +59,7 @@ export const useAuth = () => {
     try {
       setLoading(true);
       const response = await authService.register(data);
-      const { user, token } = response.data;
+      const { user, token, redirectTo } = response.data;
 
       if (!user || !token) {
         throw new Error('Invalid response: missing user or token');
@@ -73,7 +73,7 @@ export const useAuth = () => {
       try { localStorage.setItem('token', token); localStorage.setItem('user', JSON.stringify(user)); } catch (e) {}
 
       setUser(user, token);
-      return { success: true, user };
+      return { success: true, user, redirectTo };
     } catch (error) {
       const message = error.response?.data?.message || error.message || 'Registration failed';
       setError(message);

@@ -5,7 +5,7 @@ import TaskModal from '../../components/admin/TaskModal';
 import { motion } from 'framer-motion';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import { FiEdit2, FiTrash2, FiPlus, FiEye } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiPlus } from 'react-icons/fi';
 
 export const AdminTasksPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);

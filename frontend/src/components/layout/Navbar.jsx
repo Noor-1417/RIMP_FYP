@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMenu, FiX, FiBell, FiLogOut, FiUser } from 'react-icons/fi';
+import { FiMenu, FiX, FiBell, FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { getInitials } from '../../utils/helpers';
 

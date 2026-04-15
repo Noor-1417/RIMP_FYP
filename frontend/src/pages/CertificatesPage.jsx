@@ -18,7 +18,7 @@ export const CertificatesPage = () => {
 
   useEffect(() => {
     fetchCertificates();
-  }, [page]);
+  }, [page, fetchCertificates]);
 
   const fetchCertificates = async () => {
     try {

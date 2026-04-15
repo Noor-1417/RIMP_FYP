@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiEdit2, FiTrash2, FiPlus, FiDownload } from 'react-icons/fi';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -23,7 +23,7 @@ const AdminAnnouncementsPage = () => {
   useEffect(() => {
     fetchAnnouncements();
     fetchCategories();
-  }, [searchTerm, page]);
+  }, [searchTerm, page, fetchAnnouncements, fetchCategories]);
 
   const fetchAnnouncements = async () => {
     try {

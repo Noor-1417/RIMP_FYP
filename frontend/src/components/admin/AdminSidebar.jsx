@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiHome, FiUsers, FiFolder, FiCheckSquare, FiFileText, FiBarChart2, FiBell, FiSettings, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiUsers, FiFolder, FiCheckSquare, FiFileText, FiBarChart2, FiSettings, FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 
 export const AdminSidebar = ({ isOpen, onClose }) => {
@@ -11,6 +11,7 @@ export const AdminSidebar = ({ isOpen, onClose }) => {
   const menuItems = [
     { label: 'Dashboard', path: '/admin', icon: FiHome },
     { label: 'Students', path: '/admin/students', icon: FiUsers },
+    { label: 'Applications', path: '/admin/applications', icon: FiFileText },
     { label: 'Categories', path: '/admin/categories', icon: FiFolder },
     { label: 'Tasks', path: '/admin/tasks', icon: FiCheckSquare },
     { label: 'Submissions', path: '/admin/submissions', icon: FiFileText },

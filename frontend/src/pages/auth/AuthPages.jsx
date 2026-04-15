@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
-import { Button, Input, Alert } from '../../components/common/FormElements';
+import { Button, Input } from '../../components/common/FormElements';
 import toast from 'react-hot-toast';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 
@@ -55,9 +55,11 @@ export const LoginPage = () => {
 
       if (result.success) {
         toast.success('Login successful!');
-        // Redirect based on user role
-        const redirectPath = result.user?.role === 'admin' ? '/admin' : '/dashboard';
-        navigate(redirectPath);
+        // Backend indicates where to redirect next
+        if (result.redirectTo === 'admin-dashboard') navigate('/admin-dashboard');
+        else if (result.redirectTo === 'cv-builder') navigate('/cv-builder');
+        else if (result.redirectTo === 'intern-dashboard') navigate('/intern-dashboard');
+        else navigate('/intern-dashboard');
       } else {
         toast.error(result.message || 'Login failed');
         console.error('Login error:', result);
@@ -243,9 +245,10 @@ export const RegisterPage = () => {
 
       if (result.success) {
         toast.success('Registration successful!');
-        // Redirect based on user role
-        const redirectPath = result.user?.role === 'admin' ? '/admin' : '/dashboard';
-        navigate(redirectPath);
+        // Backend tells us where to send the user next
+        if (result.redirectTo === 'cv-builder') navigate('/cv-builder');
+        else if (result.redirectTo === 'admin-dashboard') navigate('/admin-dashboard');
+        else navigate('/intern-dashboard');
       } else {
         const message = result.message || 'Registration failed';
         toast.error(message);
@@ -405,7 +408,7 @@ export const RegisterPage = () => {
           </p>
         </div>
         <div className="mt-4 text-center">
-          <p className="text-xs text-gray-400">By creating an account you agree to our <a className="text-primary font-semibold" href="#">Terms</a> and <a className="text-primary font-semibold" href="#">Privacy Policy</a>.</p>
+          <p className="text-xs text-gray-400">By creating an account you agree to our <button type="button" className="text-primary font-semibold hover:underline">Terms</button> and <button type="button" className="text-primary font-semibold hover:underline">Privacy Policy</button>.</p>
         </div>
       </motion.div>
     </div>

@@ -24,7 +24,7 @@ const AdminStudentsPage = () => {
   useEffect(() => {
     fetchStudents();
     fetchCategories();
-  }, [searchTerm, categoryFilter, statusFilter, page]);
+  }, [searchTerm, categoryFilter, statusFilter, page, fetchStudents, fetchCategories]);
 
   const fetchStudents = async () => {
     try {
@@ -236,7 +236,7 @@ const AdminStudentsPage = () => {
                           className="hover:bg-gray-900/50 transition"
                         >
                           <td className="px-6 py-4">
-                            <span className="text-white font-medium">
+                            <span className="text-black font-medium">
                               {student.firstName} {student.lastName}
                             </span>
                           </td>

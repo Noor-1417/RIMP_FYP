@@ -17,15 +17,19 @@ import AdminTasksPage from './pages/admin/AdminTasksPage';
 import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import AdminAnnouncementsPage from './pages/admin/AdminAnnouncementsPage';
+import AdminApplicationsPage from './pages/admin/AdminApplicationsPage';
 
 // Main Pages
 import { CategoriesPage } from './pages/CategoriesPage';
 import { CertificatesPage } from './pages/CertificatesPage';
 import { PaymentPage } from './pages/PaymentPage';
+import {PaymentSuccessPage} from './pages/PaymentSuccessPage';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
 import TasksPage from './pages/TasksPage';
 import TaskDetail from './pages/TaskDetail';
+import CVBuilderPage from './pages/CVBuilderPage';
+import StudentDashboard from './pages/StudentDashboard';
 
 // Protected Route Component
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
@@ -33,8 +37,13 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
+    if (allowedRoles) {
+    const userRole = (user.role || '').toString().toLowerCase();
+    const allowed = allowedRoles.map((r) => r.toString().toLowerCase());
+    if (!allowed.includes(userRole)) {
+      // If the user is authenticated but not allowed, send them to the home page
+      return <Navigate to="/" replace />;
+    }
   }
 
   return children;
@@ -109,6 +118,14 @@ function App() {
           }
         />
         <Route
+          path="/admin/applications"
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin']}>
+              <AdminApplicationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/dashboard"
           element={
             <ProtectedRoute user={user} allowedRoles={['intern', 'manager']}>
@@ -118,7 +135,25 @@ function App() {
         />
 
         <Route
+          path="/intern-dashboard"
+          element={
+            <ProtectedRoute user={user} allowedRoles={['intern', 'manager']}>
+              <InternDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/admin"
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin-dashboard"
           element={
             <ProtectedRoute user={user} allowedRoles={['admin']}>
               <AdminDashboard />
@@ -189,6 +224,25 @@ function App() {
           }
         />
 
+        {/* Student CV Builder (students only) */}
+        <Route
+          path="/cv-builder"
+          element={
+            <ProtectedRoute user={user} allowedRoles={['intern']}>
+              <CVBuilderPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student-dashboard"
+          element={
+            <ProtectedRoute user={user} allowedRoles={['intern']}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/payment/:categoryId"
           element={
@@ -198,11 +252,22 @@ function App() {
           }
         />
 
+        <Route
+          path="/payment-success"
+          element={
+            <ProtectedRoute user={user}>
+              <PaymentSuccessPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Redirect to dashboard if authenticated, else to login */}
         <Route
           path="/"
-          element={isAuthenticated ? (<Navigate to={user?.role === 'admin' ? '/admin' : '/dashboard'} replace />) : (<LandingPage />)}
+          element={isAuthenticated ? (<Navigate to={user?.role === 'admin' ? '/admin-dashboard' : '/intern-dashboard'} replace />) : (<LandingPage />)}
         />
+
+        
 
         {/* 404 Page */}
         <Route

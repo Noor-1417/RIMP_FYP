@@ -19,7 +19,7 @@ export const AdminSubmissionsPage = () => {
 
   useEffect(() => {
     fetchSubmissions();
-  }, [status, page]);
+  }, [status, page, fetchSubmissions]);
 
   const fetchSubmissions = async () => {
     try {

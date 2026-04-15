@@ -1,5 +1,6 @@
 const InternshipCategory = require('../models/InternshipCategory');
 const Enrollment = require('../models/Enrollment');
+const StripeService = require('../services/stripeService');
 
 // @desc    Get all categories
 // @route   GET /api/categories
@@ -215,6 +216,33 @@ exports.enrollCategory = async (req, res, next) => {
       });
     }
 
+    // ✅ Check if category is PAID - require Stripe Checkout
+    if (category.price && category.price > 0) {
+      try {
+        // Create Stripe Checkout session for paid enrollment
+        const session = await StripeService.createCheckoutSession(
+          req.user.id,
+          category._id,
+          category.name,
+          category.price
+        );
+
+        // Return checkout URL to redirect user to Stripe Checkout
+        return res.status(200).json({
+          success: true,
+          message: 'Checkout session created',
+          checkoutUrl: session.url,
+          sessionId: session.id,
+        });
+      } catch (stripeError) {
+        return res.status(500).json({
+          success: false,
+          message: `Failed to create checkout session: ${stripeError.message}`,
+        });
+      }
+    }
+
+    // ✅ FREE Enrollment - create enrollment immediately
     const enrollment = await Enrollment.create({
       intern: req.user.id,
       category: req.params.id,
@@ -248,6 +276,102 @@ exports.enrollCategory = async (req, res, next) => {
     res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+// @desc    Verify Stripe payment and create enrollment
+// @route   POST /api/categories/verify-payment
+// @access  Private
+exports.verifyPayment = async (req, res, next) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session ID is required',
+      });
+    }
+
+    // Verify payment with Stripe
+    const paymentData = await StripeService.handleCheckoutSessionCompleted(sessionId);
+
+    if (!paymentData.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment verification failed',
+      });
+    }
+
+    const { userId, categoryId, amount, currency } = paymentData;
+
+    // Fetch category details
+    const category = await InternshipCategory.findById(categoryId);
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found',
+      });
+    }
+
+    // Check if already enrolled (double-check)
+    const existingEnrollment = await Enrollment.findOne({
+      intern: userId,
+      category: categoryId,
+    });
+
+    if (existingEnrollment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Already enrolled in this internship',
+      });
+    }
+
+    // Create enrollment record
+    const enrollment = await Enrollment.create({
+      intern: userId,
+      category: categoryId,
+      status: 'active',
+      startDate: new Date(),
+      paymentStatus: 'completed',
+      sessionId: sessionId,
+    });
+
+    // Update enrolled count
+    category.enrolledCount += 1;
+    await category.save();
+
+    // Auto-assign tasks for this category if marked for auto-assignment
+    try {
+      const Task = require('../models/Task');
+      const autoTasks = await Task.find({ category: categoryId, isAutoAssigned: true });
+      for (const t of autoTasks) {
+        // avoid duplicates
+        t.assignedTo = Array.from(new Set([...(t.assignedTo || []), userId]));
+        await t.save();
+      }
+    } catch (autoErr) {
+      console.error('Auto-assignment error:', autoErr.message || autoErr);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment verified and enrollment created',
+      data: {
+        categoryName: category.name,
+        amount: amount,
+        currency: currency,
+        sessionId: sessionId,
+        enrollment: enrollment,
+      },
+    });
+  } catch (error) {
+    console.error('Payment verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Payment verification failed',
     });
   }
 };

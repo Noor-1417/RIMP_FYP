@@ -1,7 +1,30 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
-import { FiPlus, FiTrendingUp, FiUsers, FiCheckCircle, FiClock, FiArrowUpRight, FiDownload, FiBell, FiBook, FiRefreshCw, FiAlertCircle } from 'react-icons/fi';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+} from 'recharts';
+import {
+  FiPlus,
+  FiUsers,
+  FiCheckCircle,
+  FiClock,
+  FiArrowUpRight,
+  FiDownload,
+  FiBell,
+  FiBook,
+  FiRefreshCw,
+} from 'react-icons/fi';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminNavbar from '../../components/admin/AdminNavbar';
 import StudentsTable from '../../components/admin/StudentsTable';
@@ -18,12 +41,12 @@ const ANIMATION_VARIANTS = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.1 },
+      transition: { staggerChildren: 0.08, delayChildren: 0.08 },
     },
   },
   item: {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } },
+    hidden: { opacity: 0, y: 12 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 120, damping: 16 } },
   },
 };
 
@@ -85,27 +108,28 @@ const CATEGORIES = [
 
 const StatCard = ({ config, value, isLoading }) => {
   const Icon = config.icon;
-  const trendColor = config.trendDir === 'up' ? 'text-green-400' : 'text-gray-400';
+  const trendColor = config.trendDir === 'up' ? 'text-emerald-400' : 'text-gray-400';
 
   return (
     <motion.div
       variants={ANIMATION_VARIANTS.item}
-      className={`bg-gradient-to-br ${config.bgGradient} border ${config.borderColor} rounded-xl p-6 transition-all duration-300 backdrop-blur-sm`}
+      whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(2,6,23,0.6)' }}
+      className={`bg-gradient-to-br ${config.bgGradient} border ${config.borderColor} rounded-2xl p-6 transition-all duration-300 backdrop-blur-sm shadow-md hover:shadow-xl`}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-gray-400 text-sm font-medium mb-2">{config.title}</p>
-          <h3 className="text-4xl font-bold text-white">
+          <p className="text-gray-300 text-xs font-semibold mb-2 uppercase tracking-wider">{config.title}</p>
+          <h3 className="text-4xl font-extrabold text-white leading-tight mb-2">
             {isLoading ? '...' : value || 0}
           </h3>
-          <p className={`text-xs mt-3 flex items-center gap-1 ${trendColor}`}>
-            {config.trendDir === 'up' && <FiArrowUpRight size={14} />}
+          <p className={`text-xs mt-2 flex items-center gap-2 font-medium ${trendColor}`}>
+            {config.trendDir === 'up' && <FiArrowUpRight size={16} className="text-emerald-300" />}
             {config.trend}
           </p>
         </div>
-        <div className={`w-14 h-14 ${config.badgeColor} rounded-lg flex items-center justify-center`}>
-          <Icon size={28} />
-        </div>
+        <motion.div whileHover={{ scale: 1.03 }} className={`w-16 h-16 ${config.badgeColor} rounded-xl flex items-center justify-center`}> 
+          <Icon size={30} />
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -115,21 +139,32 @@ const StatCard = ({ config, value, isLoading }) => {
 // Component: QuickActionButton
 // ==========================================
 
-const QuickActionButton = ({ icon: Icon, label, color, onClick }) => (
-  <motion.button
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    onClick={onClick}
-    className={`flex flex-col items-center gap-2 p-4 rounded-lg bg-${color}-500/20 hover:bg-${color}-500/30 border border-${color}-500/50 transition-all text-white hover:text-${color}-300`}
-  >
-    {typeof Icon === 'string' ? (
-      <div className="text-4xl">{Icon}</div>
-    ) : (
-      <Icon size={24} />
-    )}
-    <span className="text-xs text-center font-semibold">{label}</span>
-  </motion.button>
-);
+const getButtonStyles = (color) => {
+  const map = {
+    blue: { bg: 'from-blue-600/20 to-blue-500/10', border: 'border-blue-500/60', text: 'text-blue-200 hover:text-blue-100' },
+    green: { bg: 'from-emerald-600/20 to-emerald-500/10', border: 'border-emerald-500/60', text: 'text-emerald-200 hover:text-emerald-100' },
+    amber: { bg: 'from-amber-600/20 to-amber-500/10', border: 'border-amber-500/60', text: 'text-amber-200 hover:text-amber-100' },
+    cyan: { bg: 'from-cyan-600/20 to-cyan-500/10', border: 'border-cyan-500/60', text: 'text-cyan-200 hover:text-cyan-100' },
+    indigo: { bg: 'from-indigo-600/20 to-indigo-500/10', border: 'border-indigo-500/60', text: 'text-indigo-200 hover:text-indigo-100' },
+    red: { bg: 'from-red-600/20 to-red-500/10', border: 'border-red-500/60', text: 'text-red-200 hover:text-red-100' },
+  };
+  return map[color] || map.blue;
+};
+
+const QuickActionButton = ({ icon: Icon, label, color, onClick }) => {
+  const styles = getButtonStyles(color);
+  return (
+    <motion.button
+      whileHover={{ scale: 1.06, y: -3 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className={`flex flex-col items-center gap-3 p-4 rounded-xl bg-gradient-to-br ${styles.bg} ${styles.border} border transition-all ${styles.text} font-semibold shadow-sm hover:shadow-md`}
+    >
+      {typeof Icon === 'string' ? <div className="text-2xl">{Icon}</div> : <Icon size={26} />}
+      <span className="text-xs text-center font-semibold">{label}</span>
+    </motion.button>
+  );
+};
 
 // ==========================================
 // Component: CategoryCard
@@ -139,13 +174,16 @@ const CategoryCard = ({ category, onManage }) => (
   <motion.div
     variants={ANIMATION_VARIANTS.item}
     onClick={() => onManage(category)}
-    className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50 hover:border-blue-500/50 transition-all duration-300 cursor-pointer group backdrop-blur-sm hover:shadow-lg hover:shadow-blue-500/10"
+    whileHover={{ y: -6, boxShadow: '0 20px 40px rgba(59, 130, 246, 0.12)' }}
+    className="bg-gradient-to-br from-gray-800/70 to-gray-900/50 rounded-2xl p-6 md:p-7 border border-gray-700/40 hover:border-blue-500/60 transition-all duration-300 cursor-pointer group backdrop-blur-md shadow-md hover:shadow-xl"
   >
     <div className="flex items-start justify-between mb-4">
-      <div className="text-4xl">{category.icon}</div>
-      <span className="text-2xl font-bold text-blue-400">{category.completion}%</span>
+      <motion.div whileHover={{ scale: 1.12 }} className="text-4xl md:text-5xl">
+        {category.icon}
+      </motion.div>
+      <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">{category.completion}%</span>
     </div>
-    <h3 className="text-lg font-bold text-white mb-4 group-hover:text-blue-300 transition-colors line-clamp-2">
+    <h3 className="text-lg md:text-xl font-bold mb-4 group-hover:text-blue-300 transition-colors line-clamp-2 bg-gradient-to-r from-blue-200 to-cyan-200 bg-clip-text text-transparent">
       {category.name}
     </h3>
     <div className="space-y-3 mb-4">
@@ -153,17 +191,18 @@ const CategoryCard = ({ category, onManage }) => (
       <StatRow label="Tasks" value={category.tasks} />
       <StatRow label="New Enrollments" value={`+${category.newEnrollments}`} highlight />
     </div>
-    <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+    <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden mb-4">
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${category.completion}%` }}
-        transition={{ duration: 1, ease: 'easeOut' }}
-        className="bg-gradient-to-r from-blue-500 to-blue-400 h-2 rounded-full"
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+        className="bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-400 h-3 rounded-full shadow-sm"
       />
     </div>
     <motion.button
-      whileHover={{ scale: 1.02 }}
-      className="mt-4 w-full py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg font-semibold text-sm transition-colors border border-blue-500/50"
+      whileHover={{ scale: 1.04, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      className="mt-2 w-full py-3 bg-gradient-to-r from-blue-600/30 to-blue-500/20 hover:from-blue-600/50 hover:to-blue-500/40 text-white font-semibold text-sm rounded-xl transition-all duration-300 border border-blue-500/60 shadow-sm hover:shadow-md"
     >
       Manage
     </motion.button>
@@ -390,10 +429,11 @@ const PageHeader = ({ onRefresh, isRefreshing }) => (
   <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
       <div>
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <h1 className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-300 bg-clip-text text-transparent tracking-tight drop-shadow-md">
           Dashboard
         </h1>
-        <p className="text-gray-400 mt-2">Real-time analytics and platform insights</p>
+        <p className="text-gray-300 mt-2 text-sm">Real-time analytics and platform insights</p>
+        <div className="border-b border-gray-800 mt-4 mb-6" />
       </div>
       <motion.button
         whileHover={{ rotate: isRefreshing ? 0 : 10 }}
@@ -422,7 +462,7 @@ const QuickActionsPanel = ({
     transition={{ delay: 0.2 }}
     className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl p-6 md:p-8 border border-blue-700/30 backdrop-blur-sm"
   >
-    <h3 className="text-2xl font-bold text-white mb-6">Quick Actions</h3>
+    <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-200 to-blue-200 bg-clip-text text-transparent mb-6">Quick Actions</h3>
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       <QuickActionButton icon={FiPlus} label="Add Category" color="blue" onClick={onAddCategory} />
       <QuickActionButton icon={FiBook} label="Add Task" color="green" onClick={onAddTask} />
@@ -536,8 +576,8 @@ const ChartCard = ({ title, subtitle, children }) => (
     className="bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-700/50 backdrop-blur-sm hover:border-gray-600/50 transition-all duration-300"
   >
     <div className="mb-6">
-      <h3 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white/90 to-gray-300">{title}</h3>
-      <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
+      <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-200 to-cyan-200 bg-clip-text text-transparent tracking-wide">{title}</h3>
+      <p className="text-sm text-gray-300 mt-1">{subtitle}</p>
     </div>
     {children}
   </motion.div>
@@ -547,8 +587,8 @@ const CategoriesSection = ({ categories, onManage }) => (
   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
     <div className="flex items-center justify-between mb-6">
       <div>
-            <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white/90 to-gray-300">Category Overview</h2>
-        <p className="text-gray-400 text-sm mt-1">Manage internship tracks and monitor progress</p>
+        <h2 className="text-3xl font-extrabold bg-gradient-to-r from-blue-300 to-cyan-200 bg-clip-text text-transparent tracking-tight">Category Overview</h2>
+        <p className="text-gray-300 text-sm mt-1">Manage internship tracks and monitor progress</p>
       </div>
     </div>
     <motion.div
@@ -574,8 +614,8 @@ const TablesSection = ({ students, submissions, loadingStudents, loadingSubmissi
     >
       <div className="p-6 md:p-8 border-b border-gray-700/50 flex justify-between items-center bg-gradient-to-r from-gray-800/50 to-gray-900/50">
         <div>
-          <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white/95 to-gray-300">Recent Students</h2>
-          <p className="text-sm text-gray-400 mt-1">Latest enrolled interns and progress</p>
+          <h2 className="text-2xl font-semibold bg-gradient-to-r from-blue-200 to-cyan-200 bg-clip-text text-transparent">Recent Students</h2>
+          <p className="text-sm text-gray-300 mt-1">Latest enrolled interns and progress</p>
         </div>
         <a
           href="/admin/students"
@@ -597,8 +637,8 @@ const TablesSection = ({ students, submissions, loadingStudents, loadingSubmissi
     >
       <div className="p-6 md:p-8 border-b border-gray-700/50 flex justify-between items-center bg-gradient-to-r from-gray-800/50 to-gray-900/50">
         <div>
-          <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white/95 to-gray-300">Recent Submissions</h2>
-          <p className="text-sm text-gray-400 mt-1">Latest task submissions and AI scores</p>
+          <h2 className="text-2xl font-semibold bg-gradient-to-r from-blue-200 to-cyan-200 bg-clip-text text-transparent">Recent Submissions</h2>
+          <p className="text-sm text-gray-300 mt-1">Latest task submissions and AI scores</p>
         </div>
         <a
           href="/admin/submissions"

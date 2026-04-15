@@ -30,6 +30,7 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const storageRoutes = require('./routes/storageRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -41,6 +42,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/storage', storageRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/applications', applicationRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

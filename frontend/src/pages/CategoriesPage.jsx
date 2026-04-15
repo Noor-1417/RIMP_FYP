@@ -10,39 +10,57 @@ import toast from 'react-hot-toast';
 export const CategoriesPage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [filterDifficulty, setFilterDifficulty] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchCategories();
-  }, [page, filterDifficulty]);
-
+  // ✅ FIXED: function moved ABOVE useEffect
   const fetchCategories = async () => {
     try {
       setLoading(true);
+
       const response = await categoryService.getAll({
         page,
         limit: 9,
         difficulty: filterDifficulty || undefined,
       });
+
       setCategories(response.data.data);
       setTotalPages(response.data.pagination.pages);
+      setError('');
     } catch (error) {
+      console.error('Category load error:', error);
+      setError('Unable to load categories. Please refresh the page.');
       toast.error('Failed to load categories');
+      setCategories([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ FIXED: removed fetchCategories from dependency array
+  useEffect(() => {
+    fetchCategories();
+  }, [page, filterDifficulty]);
+
   const handleEnroll = async (categoryId) => {
     try {
-      await categoryService.enroll(categoryId);
-      toast.success('Enrolled successfully!');
-      navigate('/dashboard');
+      const response = await categoryService.enroll(categoryId);
+
+      // ✅ Check if it's a PAID enrollment - redirect to Stripe Checkout
+      if (response.data?.checkoutUrl) {
+        // Redirect to Stripe Checkout
+        window.location.href = response.data.checkoutUrl;
+      } else {
+        // ✅ FREE enrollment - show success and redirect to dashboard
+        toast.success('Enrolled successfully!');
+        navigate('/dashboard');
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Enrollment failed');
+      console.error('Enrollment error:', error);
     }
   };
 
@@ -57,8 +75,12 @@ export const CategoriesPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-4xl font-bold text-primary mb-2">Internship Categories</h1>
-          <p className="text-gray-600">Explore our comprehensive internship programs</p>
+          <h1 className="text-4xl font-bold text-primary mb-2">
+            Internship Categories
+          </h1>
+          <p className="text-gray-600">
+            Explore our comprehensive internship programs
+          </p>
         </motion.div>
 
         {/* Filters */}
@@ -78,17 +100,22 @@ export const CategoriesPage = () => {
           </select>
         </div>
 
-        {/* Categories Grid */}
+        {/* Content */}
         {loading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
+        ) : error ? (
+          <Card className="text-center py-12 bg-red-50 border border-red-200 text-red-700">
+            <p>{error}</p>
+          </Card>
         ) : categories.length === 0 ? (
           <Card className="text-center py-12">
             <p className="text-gray-600 text-lg">No categories found</p>
           </Card>
         ) : (
           <>
+            {/* Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {categories.map((category, index) => (
                 <motion.div
@@ -107,53 +134,124 @@ export const CategoriesPage = () => {
                     )}
 
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-primary mb-2">{category.name}</h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{category.description}</p>
+                      <h3 className="text-xl font-bold text-primary mb-2">
+                        {category.name}
+                      </h3>
+
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                        {category.description}
+                      </p>
 
                       <div className="space-y-3 mb-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Duration:</span>
-                          <Badge variant="light">{category.duration} weeks</Badge>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">
+                            Duration:
+                          </span>
+                          <Badge variant="light">
+                            {category.duration} weeks
+                          </Badge>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Level:</span>
-                          <Badge variant={category.difficulty === 'advanced' ? 'danger' : 'secondary'}>
+
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">
+                            Level:
+                          </span>
+                          <Badge
+                            variant={
+                              category.difficulty === 'advanced'
+                                ? 'danger'
+                                : 'secondary'
+                            }
+                          >
                             {category.difficulty}
                           </Badge>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Price:</span>
-                          <span className="font-bold text-primary">
-                            {category.price === 0 ? 'Free' : `$${category.price}`}
-                          </span>
+
+                        {/* Payment */}
+                        <div className="border-t pt-3">
+                          <div className="flex justify-between mb-2">
+                            <span className="text-sm text-gray-600">
+                              Payment Type:
+                            </span>
+                            <Badge
+                              variant={
+                                category.price === 0
+                                  ? 'success'
+                                  : 'danger'
+                              }
+                            >
+                              {category.price === 0 ? '✓ Free' : '💳 Paid'}
+                            </Badge>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">
+                              Price:
+                            </span>
+                            <span
+                              className={`font-bold text-lg ${
+                                category.price > 0
+                                  ? 'text-danger'
+                                  : 'text-success'
+                              }`}
+                            >
+                              {category.price === 0
+                                ? 'Free'
+                                : `$${category.price.toFixed(2)}`}
+                            </span>
+                          </div>
+
+                          {category.price > 0 && (
+                            <p className="text-xs text-gray-500 mt-2 italic">
+                              💳 Secure payment via Stripe
+                            </p>
+                          )}
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Enrolled:</span>
+
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">
+                            Enrolled:
+                          </span>
                           <span className="text-sm font-medium">
                             {category.enrolledCount}/{category.capacity}
                           </span>
                         </div>
                       </div>
 
-                      {category.learningOutcomes && category.learningOutcomes.length > 0 && (
+                      {category.learningOutcomes?.length > 0 && (
                         <div className="mb-4">
-                          <h4 className="text-sm font-semibold text-primary mb-2">Learning Outcomes:</h4>
+                          <h4 className="text-sm font-semibold text-primary mb-2">
+                            Learning Outcomes:
+                          </h4>
                           <ul className="text-xs text-gray-600 space-y-1">
-                            {category.learningOutcomes.slice(0, 3).map((outcome, idx) => (
-                              <li key={idx}>✓ {outcome}</li>
-                            ))}
+                            {category.learningOutcomes
+                              .slice(0, 3)
+                              .map((outcome, idx) => (
+                                <li key={idx}>✓ {outcome}</li>
+                              ))}
                           </ul>
                         </div>
                       )}
                     </div>
 
-                    <div className="pt-4 border-t border-light">
+                    <div className="pt-4 border-t">
+                      {category.price > 0 && (
+                        <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-xs text-yellow-800 font-semibold">
+                            💳 Paid internship — payment required after
+                            enrollment.
+                          </p>
+                        </div>
+                      )}
+
                       <Button
                         variant="primary"
                         fullWidth
                         onClick={() => handleEnroll(category._id)}
                       >
-                        Enroll Now
+                        {category.price > 0
+                          ? 'Enroll & Pay Now'
+                          : 'Enroll Now'}
                       </Button>
                     </div>
                   </Card>
@@ -161,6 +259,7 @@ export const CategoriesPage = () => {
               ))}
             </div>
 
+            {/* Pagination */}
             {totalPages > 1 && (
               <Pagination
                 currentPage={page}

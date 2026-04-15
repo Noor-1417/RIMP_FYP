@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiEye, FiEdit2, FiTrash2, FiMoreHorizontal } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 export const StudentsTable = ({ students, loading, onRefresh }) => {
   const navigate = useNavigate();
-  const [expandedId, setExpandedId] = useState(null);
 
   const getProgressPercentage = (student) => {
     if (!student.enrollments || student.enrollments.length === 0) return 0;
@@ -40,11 +39,6 @@ export const StudentsTable = ({ students, loading, onRefresh }) => {
 
   const handleViewTasks = (studentId) => {
     navigate(`/admin/tasks?student=${studentId}`);
-  };
-
-  const handleChangeCategory = (studentId) => {
-    toast.success(`Change category for student ${studentId}`);
-    // TODO: Implement category change modal
   };
 
   const handleRemoveStudent = (studentId) => {
@@ -118,7 +112,7 @@ export const StudentsTable = ({ students, loading, onRefresh }) => {
                   variants={item}
                   className="border-b border-gray-700 hover:bg-gray-700/30 transition-colors"
                 >
-                  <td className="px-6 py-4 text-sm font-semibold text-white">
+                  <td className="px-6 py-4 text-sm font-semibold text-black">
                     {student.firstName} {student.lastName}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-400">{student.email}</td>
