@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSubscription } from '../context/SubscriptionContext';
-import { api } from '../../services/api';
+import api from '../../services/api';
 
 export const UpgradePlanModal = ({ isOpen, onClose, onUpgradeSuccess }) => {
   const { subscription } = useSubscription();
@@ -19,7 +19,7 @@ export const UpgradePlanModal = ({ isOpen, onClose, onUpgradeSuccess }) => {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const response = await api.get('/api/subscriptions/plans');
+        const response = await api.get('/subscriptions/plans');
         setPlans(response.data.plans.filter((p) => p.id !== 'trial'));
       } catch (err) {
         setError(err.message);
@@ -46,7 +46,7 @@ export const UpgradePlanModal = ({ isOpen, onClose, onUpgradeSuccess }) => {
 
       // Note: You need to handle Stripe payment first
       // This is simplified - implement full Stripe flow in production
-      const response = await api.post('/api/subscriptions/upgrade-plan', {
+      const response = await api.post('/subscriptions/upgrade-plan', {
         planDuration,
         paymentMethod: 'stripe',
         paymentIntentId: 'pi_test_intent_id', // Replace with actual payment intent

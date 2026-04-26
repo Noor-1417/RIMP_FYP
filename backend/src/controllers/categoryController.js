@@ -160,7 +160,7 @@ exports.updateCategory = async (req, res, next) => {
 // @access  Private/Admin
 exports.deleteCategory = async (req, res, next) => {
   try {
-    const category = await InternshipCategory.findByIdAndRemove(req.params.id);
+    const category = await InternshipCategory.findByIdAndDelete(req.params.id);
 
     if (!category) {
       return res.status(404).json({

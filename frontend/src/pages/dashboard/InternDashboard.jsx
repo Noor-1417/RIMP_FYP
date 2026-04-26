@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { taskService, quizService, certificateService } from '../../services';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';   // ← Added this import
 
 const StatCard = ({ icon, label, value, trend }) => (
   <motion.div
@@ -28,6 +29,8 @@ const StatCard = ({ icon, label, value, trend }) => (
 
 export const InternDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();   // ← Added this line
+
   const [stats, setStats] = useState({
     tasksCompleted: 0,
     quizzesTaken: 0,
@@ -207,15 +210,33 @@ export const InternDashboard = () => {
                 )}
               </div>
             </div>
-
             <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
-                <p className="text-gray-700">{application ? application.fullName : `${user?.firstName || ''} ${user?.lastName || ''}`}</p>
-                <p className="text-gray-500 text-sm">{application ? application.email : user?.email}</p>
+                <p className="text-gray-700">
+                  {application ? application.fullName : `${user?.firstName || ''} ${user?.lastName || ''}`}
+                </p>
+                <p className="text-gray-500 text-sm">
+                  {application ? application.email : user?.email}
+                </p>
               </div>
               <div className="flex gap-3 md:justify-end">
-                <button className="bg-blue-600 text-white px-4 py-2 rounded">{application ? 'View / Edit CV' : 'Complete CV'}</button>
-                <button disabled={!application} className={`px-4 py-2 rounded ${application ? 'bg-green-600 text-white' : 'bg-gray-400 text-gray-800 cursor-not-allowed'}`}>Download CV</button>
+                <button 
+                  onClick={() => navigate(application ? '/cv-builder?edit=1' : '/cv-builder')}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                >
+                  {application ? 'View / Edit CV' : 'Complete CV'}
+                </button>
+                <button 
+                  onClick={() => application && downloadPdf(application)}
+                  disabled={!application}
+                  className={`px-4 py-2 rounded transition ${
+                    application 
+                      ? 'bg-green-600 text-white hover:bg-green-700' 
+                      : 'bg-gray-400 text-gray-800 cursor-not-allowed'
+                  }`}
+                >
+                  Download CV
+                </button>
               </div>
             </div>
           </Card>

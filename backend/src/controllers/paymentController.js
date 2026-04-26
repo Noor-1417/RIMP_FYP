@@ -2,6 +2,9 @@ const Payment = require('../models/Payment');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_your_stripe_secret_key');
 const InternshipCategory = require('../models/InternshipCategory');
 const Enrollment = require('../models/Enrollment');
+const User = require('../models/User');
+const Project = require('../models/Project');
+const aiService = require('../services/aiService');
 
 // @desc    Get user payments
 // @route   GET /api/payments
@@ -150,6 +153,45 @@ exports.confirmPayment = async (req, res, next) => {
       startDate: new Date(),
     });
 
+    // Trigger automatic AI project generation after enrollment
+    try {
+      const user = await User.findById(payment.user);
+      if (user && enrollment) {
+        const projectData = await aiService.generateInternshipProject(
+          {
+            skills: user.skills?.technical || [],
+            field: user.field || 'General',
+            interest: user.interest || '',
+          },
+          'General Internship'
+        );
+
+        // Create project in database
+        const project = new Project({
+          userId: payment.user,
+          enrollmentId: enrollment._id,
+          categoryId: payment.category,
+          title: projectData.title,
+          description: projectData.description,
+          objectives: projectData.objectives,
+          tools: projectData.tools,
+          skills: projectData.skills,
+          tasks: projectData.tasks,
+          notes: projectData.notes,
+          totalTasks: projectData.tasks.length,
+          completedTasks: 0,
+          progress: 0,
+          status: 'active',
+        });
+
+        await project.save();
+        console.log(`✓ AI Project auto-generated for user ${payment.user}`);
+      }
+    } catch (aiError) {
+      console.error('Error auto-generating AI project:', aiError);
+      // Don't fail payment if project generation fails
+    }
+
     res.status(200).json({
       success: true,
       message: 'Payment confirmed successfully',
@@ -262,7 +304,10 @@ exports.handleStripeWebhook = async (req, res, next) => {
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    return res.status(400).json({
+      success: false,
+      message: `Webhook Error: ${err.message}`,
+    });
   }
 
   // Handle the event
@@ -280,16 +325,53 @@ exports.handleStripeWebhook = async (req, res, next) => {
           // Create enrollment
           const existing = await Enrollment.findOne({ paymentId: payment._id });
           if (!existing) {
-            await Enrollment.create({
+            const enrollment = await Enrollment.create({
               intern: payment.user,
               category: payment.category,
               paymentId: payment._id,
               status: 'active',
               startDate: new Date(),
             });
-          }
 
-          console.log(`✓ Payment confirmed: ${paymentIntent.id}`);
+            // Trigger automatic AI project generation after enrollment
+            try {
+              const user = await User.findById(payment.user);
+              if (user && enrollment) {
+                const projectData = await aiService.generateInternshipProject(
+                  {
+                    skills: user.skills?.technical || [],
+                    field: user.field || 'General',
+                    interest: user.interest || '',
+                  },
+                  'General Internship'
+                );
+
+                // Create project in database
+                const project = new Project({
+                  userId: payment.user,
+                  enrollmentId: enrollment._id,
+                  categoryId: payment.category,
+                  title: projectData.title,
+                  description: projectData.description,
+                  objectives: projectData.objectives,
+                  tools: projectData.tools,
+                  skills: projectData.skills,
+                  tasks: projectData.tasks,
+                  notes: projectData.notes,
+                  totalTasks: projectData.tasks.length,
+                  completedTasks: 0,
+                  progress: 0,
+                  status: 'active',
+                });
+
+                await project.save();
+                console.log(`✓ Payment confirmed and AI Project auto-generated: ${paymentIntent.id}`);
+              }
+            } catch (aiError) {
+              console.error('Error auto-generating AI project:', aiError);
+              // Log error but don't fail webhook
+            }
+          }
         }
         break;
       }

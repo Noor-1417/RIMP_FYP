@@ -14,11 +14,16 @@ const transporter = nodemailer.createTransport({
 
 function renderTemplate(name, vars = {}) {
   const tplPath = path.join(__dirname, '..', 'templates', `${name}.html`);
-  let tpl = fs.readFileSync(tplPath, 'utf8');
-  Object.keys(vars).forEach((k) => {
-    tpl = tpl.replace(new RegExp(`{{${k}}}`, 'g'), vars[k]);
-  });
-  return tpl;
+  try {
+    let tpl = fs.readFileSync(tplPath, 'utf8');
+    Object.keys(vars).forEach((k) => {
+      tpl = tpl.replace(new RegExp(`{{${k}}}`, 'g'), vars[k]);
+    });
+    return tpl;
+  } catch (err) {
+    console.error(`Email template file not found: ${tplPath}`, err.message);
+    throw new Error(`Failed to load email template '${name}': ${err.message}`);
+  }
 }
 
 async function sendMail({ to, subject, html, text }) {

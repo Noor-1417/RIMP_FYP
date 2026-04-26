@@ -159,7 +159,7 @@ exports.updateTask = async (req, res, next) => {
 // @access  Private/Admin/Manager
 exports.deleteTask = async (req, res, next) => {
   try {
-    const task = await Task.findByIdAndRemove(req.params.id);
+    const task = await Task.findByIdAndDelete(req.params.id);
 
     if (!task) {
       return res.status(404).json({

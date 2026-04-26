@@ -1,19 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useAuth } from '../hooks/useAuth';
-
-/*
-  CVBuilderPage.jsx
-
-  Self-contained React page that lets the user fill CV fields and download
-  a professional CV as HTML (or open print preview to save as PDF).
-
-  Usage: Add a route or render <CVBuilderPage /> after login/signup.
-*/
+import { Navbar } from '../components/layout/Navbar';
 
 export default function CVBuilderPage() {
   const [personal, setPersonal] = useState({
@@ -25,11 +17,10 @@ export default function CVBuilderPage() {
     address: '',
     summary: '',
   });
-
-  const [education, setEducation] = useState([{ degree: '', institution: '', year: '', gpa: '' }]);
-  const [experience, setExperience] = useState([{ company: '', role: '', start: '', end: '', description: '' }]);
-  const [projects, setProjects] = useState([{ name: '', description: '', technologies: '' }]);
-  const [certifications, setCertifications] = useState([{ name: '', issuer: '', date: '' }]);
+  const [education, setEducation] = useState([{ degree: '', institution: '', year: '', gpa: '', id: Date.now().toString() }]);
+  const [experience, setExperience] = useState([{ company: '', role: '', start: '', end: '', description: '', id: Date.now().toString() }]);
+  const [projects, setProjects] = useState([{ name: '', description: '', technologies: '', id: Date.now().toString() }]);
+  const [certifications, setCertifications] = useState([{ name: '', issuer: '', date: '', id: Date.now().toString() }]);
   const [skills, setSkills] = useState({ technical: '', soft: '' });
 
   const previewRef = useRef();
@@ -38,26 +29,21 @@ export default function CVBuilderPage() {
   const [loadError, setLoadError] = useState('');
   const navigate = useNavigate();
   const { user } = useAuth();
-
   const location = useLocation();
 
   useEffect(() => {
-    // If user already has an application and NOT in edit mode, redirect to intern dashboard
     const params = new URLSearchParams(location.search);
     const isEdit = params.get('edit') === '1' || params.get('edit') === 'true';
 
     const checkExisting = async () => {
       setIsInitializing(true);
       setLoadError('');
-
       if (!user || !user._id) {
         setIsInitializing(false);
         return;
       }
-
       try {
         const res = await api.get(`/applications/user/${user._id}`);
-        // If found and not editing, navigate to intern dashboard
         if (res.data && res.data.data) {
           if (!isEdit) {
             navigate('/intern-dashboard');
@@ -72,52 +58,56 @@ export default function CVBuilderPage() {
               address: app.address || '',
               summary: app.summary || '',
             });
-            setEducation(app.education && app.education.length ? app.education : [{ degree: '', institution: '', year: '', gpa: '' }]);
-            setExperience(app.experience && app.experience.length ? app.experience : [{ company: '', role: '', start: '', end: '', description: '' }]);
-            setProjects(app.projects && app.projects.length ? app.projects : [{ name: '', description: '', technologies: '' }]);
-            setCertifications(app.certifications && app.certifications.length ? app.certifications : [{ name: '', issuer: '', date: '' }]);
+            setEducation(app.education?.map(item => ({ ...item, id: item.id || Date.now().toString() })) || [{ degree: '', institution: '', year: '', gpa: '', id: Date.now().toString() }]);
+            setExperience(app.experience?.map(item => ({ ...item, id: item.id || Date.now().toString() })) || [{ company: '', role: '', start: '', end: '', description: '', id: Date.now().toString() }]);
+            setProjects(app.projects?.map(item => ({ ...item, id: item.id || Date.now().toString() })) || [{ name: '', description: '', technologies: '', id: Date.now().toString() }]);
+            setCertifications(app.certifications?.map(item => ({ ...item, id: item.id || Date.now().toString() })) || [{ name: '', issuer: '', date: '', id: Date.now().toString() }]);
             setSkills(app.skills || { technical: '', soft: '' });
           }
+        } else {
+          if (user.skills) setSkills(user.skills);
+          setPersonal((prev) => ({
+            ...prev,
+            email: user.email || prev.email,
+            fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || prev.fullName,
+          }));
         }
       } catch (err) {
         if (err.response && err.response.status === 404) {
-          // no existing application yet
+          if (user.skills) setSkills(user.skills);
+          setPersonal((prev) => ({
+            ...prev,
+            email: user.email || prev.email,
+            fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || prev.fullName,
+          }));
         } else {
-          console.error('Error checking application:', err);
-          setLoadError('Unable to verify your existing application. You may continue and submit this form.');
+          setLoadError('Unable to verify your existing application. You may continue.');
         }
       } finally {
         setIsInitializing(false);
       }
     };
-
     checkExisting();
   }, [user, navigate, location.search]);
 
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white px-4 py-8">
-        <div className="rounded-3xl bg-slate-900 p-10 shadow-2xl text-center w-full max-w-lg">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-cyan-400 mb-5" />
-          <p className="text-lg font-semibold">Verifying your application details…</p>
-          <p className="mt-2 text-slate-400">This should only take a moment.</p>
-        </div>
-      </div>
-    );
-  }
+  // Updated addRow with id (minimal change)
+  const addRow = useCallback((setter, state) => {
+    const newItem = Object.keys(state[0] || {}).reduce((acc, k) => { acc[k] = ''; return acc; }, {});
+    newItem.id = Date.now().toString() + Math.random();
+    setter([...state, newItem]);
+  }, []);
 
-  // helpers for repeatable sections
-  const addRow = (setter, state) => setter([...state, Object.keys(state[0] || {}).reduce((acc, k) => { acc[k] = ''; return acc; }, {})]);
-  const removeRow = (setter, state, idx) => setter(state.filter((_, i) => i !== idx));
-  const updateRow = (setter, state, idx, field, value) => {
+  const removeRow = useCallback((setter, state, idx) => setter(state.filter((_, i) => i !== idx)), []);
+
+  const updateRow = useCallback((setter, state, idx, field, value) => {
     const copy = [...state];
     copy[idx] = { ...copy[idx], [field]: value };
     setter(copy);
-  };
+  }, []);
 
   const escapeHtml = (s = '') => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-  const buildCvHtml = () => {
+  const buildCvHtml = useCallback(() => {
     const p = personal;
     const style = `
       body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#f3f4f6;margin:0;padding:32px;color:#0f172a}
@@ -132,7 +122,6 @@ export default function CVBuilderPage() {
       .muted{color:#334155;opacity:.9;font-size:13px}
       .skill-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
       .skill-pill{background:#e6f7ff;color:#0369a1;padding:6px 10px;border-radius:999px;font-size:13px;border:1px solid #bae6fd}
-      @media(min-width:900px){.cv-body{grid-template-columns:1fr 320px}}
       @media print{body{background:#fff;padding:0}.cv-container{box-shadow:none}}
     `;
 
@@ -155,41 +144,25 @@ export default function CVBuilderPage() {
 
     const summaryHtml = p.summary ? `<div class="section"><h4>Summary</h4><div class="card muted">${escapeHtml(p.summary)}</div></div>` : '';
 
-    const educationHtml = education && education.length ? `<div class="section"><h4>Education</h4>${education.filter(e=>e.degree||e.institution).map(e=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;"><div style="font-weight:700">${escapeHtml(e.degree||'')} <span style="font-weight:600;color:#475569"> - ${escapeHtml(e.institution||'')}</span></div><div class="muted">${escapeHtml(e.year||'')} ${e.gpa?`• GPA ${escapeHtml(e.gpa)}`:''}</div></div></div>`).join('')}</div>` : '';
+    const educationHtml = education?.length ? `<div class="section"><h4>Education</h4>${education.filter(e=>e.degree||e.institution).map(e=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;"><div style="font-weight:700">${escapeHtml(e.degree||'')} <span style="font-weight:600;color:#475569"> - ${escapeHtml(e.institution||'')}</span></div><div class="muted">${escapeHtml(e.year||'')} ${e.gpa?` • GPA ${escapeHtml(e.gpa)}`:''}</div></div></div>`).join('')}</div>` : '';
 
-    const expHtml = experience && experience.length ? `<div class="section"><h4>Work Experience</h4>${experience.filter(ex=>ex.company||ex.role).map(ex=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;"><div><div style="font-weight:700">${escapeHtml(ex.role||'')} <span style="font-weight:600;color:#475569"> at ${escapeHtml(ex.company||'')}</span></div><div class="muted" style="margin-top:6px">${escapeHtml(ex.description||'')}</div></div><div class="muted">${escapeHtml(ex.start||'')}${ex.end? ' — ' + escapeHtml(ex.end):''}</div></div>`).join('')}</div>` : '';
+    const expHtml = experience?.length ? `<div class="section"><h4>Work Experience</h4>${experience.filter(ex=>ex.company||ex.role).map(ex=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;"><div><div style="font-weight:700">${escapeHtml(ex.role||'')} <span style="font-weight:600;color:#475569"> at ${escapeHtml(ex.company||'')}</span></div><div class="muted" style="margin-top:6px">${escapeHtml(ex.description||'')}</div></div><div class="muted">${escapeHtml(ex.start||'')}${ex.end? ' — ' + escapeHtml(ex.end):''}</div></div>`).join('')}</div>` : '';
 
-    const projectsHtml = projects && projects.length ? `<div class="section"><h4>Projects</h4>${projects.filter(pj=>pj.name).map(pj=>`<div class="card"><div style="font-weight:700">${escapeHtml(pj.name||'')}</div><div class="project-meta">${escapeHtml(pj.description||'')}</div><div class="muted" style="margin-top:8px">Technologies: ${escapeHtml(pj.technologies||'')}</div></div>`).join('')}</div>` : '';
+    const projectsHtml = projects?.length ? `<div class="section"><h4>Projects</h4>${projects.filter(pj=>pj.name).map(pj=>`<div class="card"><div style="font-weight:700">${escapeHtml(pj.name||'')}</div><div class="project-meta">${escapeHtml(pj.description||'')}</div><div class="muted" style="margin-top:8px">Technologies: ${escapeHtml(pj.technologies||'')}</div></div>`).join('')}</div>` : '';
 
     const skillsHtml = (skills.technical||skills.soft) ? `<div class="section"><h4>Skills</h4><div class="card">${skills.technical?`<div style="font-weight:700;margin-bottom:6px">Technical</div><div class="skill-list">${skills.technical.split(',').map(s=>`<span class="skill-pill">${escapeHtml(s.trim())}</span>`).join('')}</div>`:''}${skills.soft?`<div style="margin-top:8px;font-weight:700">Soft Skills</div><div class="skill-list">${skills.soft.split(',').map(s=>`<span class="skill-pill">${escapeHtml(s.trim())}</span>`).join('')}</div>`:''}</div></div>` : '';
 
-    const certHtml = certifications && certifications.length ? `<div class="section"><h4>Certifications</h4>${certifications.filter(c=>c.name).map(c=>`<div class="card"><div style="font-weight:700">${escapeHtml(c.name||'')}</div><div class="muted">${escapeHtml(c.issuer||'')} • ${escapeHtml(c.date||'')}</div></div>`).join('')}</div>` : '';
+    const certHtml = certifications?.length ? `<div class="section"><h4>Certifications</h4>${certifications.filter(c=>c.name).map(c=>`<div class="card"><div style="font-weight:700">${escapeHtml(c.name||'')}</div><div class="muted">${escapeHtml(c.issuer||'')} • ${escapeHtml(c.date||'')}</div></div>`).join('')}</div>` : '';
 
-    const contactHtml = `<div class="section"><h4>Contact</h4><div class="card muted">${p.email?`<div><strong>Email:</strong> ${escapeHtml(p.email)}</div>`:''}${p.phone?`<div><strong>Phone:</strong> ${escapeHtml(p.phone)}</div>`:''}${p.website?`<div><strong>Website:</strong> ${escapeHtml(p.website)}</div>`:''}${p.address?`<div><strong>Address:</strong> ${escapeHtml(p.address)}</div>`:''}</div></div>`;
+    return `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${escapeHtml(p.fullName||'Curriculum Vitae')}</title><style>${style}</style></head><body><div class="cv-container">${personalHtml}<div class="cv-body"><div class="left">${summaryHtml}${educationHtml}${expHtml}${projectsHtml}</div><div class="right">${skillsHtml}${certHtml}</div></div></div></body></html>`;
+  }, [personal, education, experience, projects, certifications, skills]);
 
-    return `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${escapeHtml(p.fullName||'Curriculum Vitae')}</title><style>${style}</style></head><body><div class="cv-container">${personalHtml}<div class="cv-body"><div class="left">${summaryHtml}${educationHtml}${expHtml}${projectsHtml}</div><div class="right">${skillsHtml}${certHtml}${contactHtml}</div></div></div></body></html>`;
-  };
-
-  const downloadHtml = () => {
-    const html = buildCvHtml();
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(personal.fullName || 'cv').replace(/\s+/g, '_').toLowerCase()}.html`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  const generatePdfFromHtml = async (htmlContent, fileName = 'cv.pdf') => {
-    // Create offscreen container
+  const generatePdfFromHtml = useCallback(async (htmlContent, fileName = 'cv.pdf') => {
     const container = document.createElement('div');
     container.style.position = 'fixed';
     container.style.left = '-10000px';
     container.style.top = '0';
-    container.style.width = '842px'; // A4 width at 96dpi approx
+    container.style.width = '842px';
     container.style.padding = '20px';
     container.innerHTML = htmlContent;
     document.body.appendChild(container);
@@ -209,26 +182,45 @@ export default function CVBuilderPage() {
     } finally {
       container.remove();
     }
-  };
+  }, []);
 
-  const openPrintPreview = () => {
+  const downloadPdf = useCallback(async () => {
+    if (!personal.fullName.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
+    const html = buildCvHtml();
+    await generatePdfFromHtml(html, `${personal.fullName.replace(/\s+/g, '_').toLowerCase()}_cv.pdf`);
+    toast.success('CV downloaded successfully!');
+  }, [personal.fullName, buildCvHtml, generatePdfFromHtml]);
+
+  const openPrintPreview = useCallback(() => {
     const html = buildCvHtml();
     const newWin = window.open('', '_blank', 'noopener,noreferrer');
-    if (!newWin) return alert('Popup blocked. Allow popups to open print preview.');
+    if (!newWin) return toast.error('Popup blocked. Please allow popups for print preview.');
     newWin.document.open();
     newWin.document.write(html);
     newWin.document.close();
-    setTimeout(() => { newWin.focus(); newWin.print(); }, 500);
-  };
+    setTimeout(() => { 
+      newWin.focus(); 
+      newWin.print(); 
+    }, 500);
+  }, [buildCvHtml]);
 
-  const downloadPdf = async () => {
-    const html = buildCvHtml();
-    await generatePdfFromHtml(html, `${(personal.fullName || 'cv').replace(/\s+/g, '_').toLowerCase()}.pdf`);
-  };
+  const handleSubmitApplication = useCallback(async () => {
+    if (!personal.fullName.trim() || !personal.email.trim()) {
+      toast.error('Please fill in name and email at minimum');
+      return;
+    }
 
-  const handleSubmitApplication = async () => {
     try {
       setSubmitting(true);
+
+      // Remove temporary React IDs before sending to backend
+      const cleanEducation = education.map(({ id, ...rest }) => rest);
+      const cleanExperience = experience.map(({ id, ...rest }) => rest);
+      const cleanProjects = projects.map(({ id, ...rest }) => rest);
+      const cleanCertifications = certifications.map(({ id, ...rest }) => rest);
 
       const payload = {
         fullName: personal.fullName,
@@ -237,39 +229,36 @@ export default function CVBuilderPage() {
         address: personal.address,
         title: personal.title,
         summary: personal.summary,
-        education,
-        experience,
-        projects,
-        certifications,
+        education: cleanEducation,
+        experience: cleanExperience,
+        projects: cleanProjects,
+        certifications: cleanCertifications,
         skills,
       };
 
-      // Check if user already has an application
+      // Check if user already has an applicationb
       try {
         const existing = await api.get(`/applications/user/${user._id}`);
         if (existing.data && existing.data.data) {
-          // update
+          // Update existing
           const appId = existing.data.data._id;
           const res = await api.put(`/applications/${appId}`, payload);
-            if (res.data && res.data.success) {
-            toast.success('Your application has been updated!');
+          if (res.data && res.data.success) {
+            toast.success('Application updated successfully!');
             navigate('/intern-dashboard');
             return;
           }
         }
       } catch (err) {
-        // if 404, no existing application — fall through to create
         if (!(err.response && err.response.status === 404)) {
-          console.error('Error checking existing application:', err);
-          toast.error('Failed to submit application');
-          return;
+          throw err;
         }
       }
 
+      // Create new
       const res = await api.post('/applications', payload);
       if (res.data && res.data.success) {
-        toast.success('Your application has been submitted!');
-        // Redirect student to intern dashboard after successful submission
+        toast.success('Application submitted successfully!');
         navigate('/intern-dashboard');
       } else {
         toast.error(res.data?.message || 'Submission failed');
@@ -280,9 +269,46 @@ export default function CVBuilderPage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [personal, education, experience, projects, certifications, skills, user._id, navigate]);
 
-  // small input component
+  // Memoized handlers for each form section (prevents focus loss)
+  const handlePersonalChange = useCallback((field, value) => {
+    setPersonal(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleEducationUpdate = useCallback((idx, field, value) => {
+    updateRow(setEducation, education, idx, field, value);
+  }, [education, updateRow]);
+
+  const handleExperienceUpdate = useCallback((idx, field, value) => {
+    updateRow(setExperience, experience, idx, field, value);
+  }, [experience, updateRow]);
+
+  const handleProjectsUpdate = useCallback((idx, field, value) => {
+    updateRow(setProjects, projects, idx, field, value);
+  }, [projects, updateRow]);
+
+  const handleCertificationsUpdate = useCallback((idx, field, value) => {
+    updateRow(setCertifications, certifications, idx, field, value);
+  }, [certifications, updateRow]);
+
+  const handleSkillsChange = useCallback((type, value) => {
+    setSkills(prev => ({ ...prev, [type]: value }));
+  }, []);
+
+  // Early returns AFTER all hooks declared
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white px-4 py-8">
+        <div className="rounded-3xl bg-slate-900 p-10 shadow-2xl text-center w-full max-w-lg">
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-cyan-400 mb-5" />
+          <p className="text-lg font-semibold">Verifying your application details…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Input component (unchanged)
   const Input = ({ label, value, onChange, placeholder, type = 'text' }) => (
     <div style={{ marginBottom: 12 }}>
       <label style={{ display: 'block', fontSize: 13, color: '#0f172a', marginBottom: 6, fontWeight: 700 }}>{label}</label>
@@ -290,194 +316,393 @@ export default function CVBuilderPage() {
     </div>
   );
 
-  // page styles
-  const pageStyle = { fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial', background: '#0f172a', minHeight: '100vh', padding: 24, color: '#e6eef3' };
-  const containerStyle = { maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24 };
-  const panelStyle = { background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))', border: '1px solid rgba(255,255,255,0.04)', padding: 20, borderRadius: 12, boxShadow: '0 8px 30px rgba(2,6,23,0.6)' };
-
-  // small helpers for buttons / inputs
-  function tinyButtonStyle() { return { background: 'transparent', border: '1px solid rgba(255,255,255,0.06)', color: '#cfe7ff', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }; }
-  function tinyDangerButtonStyle() { return { background: 'linear-gradient(90deg,#ef4444,#f97316)', border: 'none', color: 'white', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }; }
-  function rowInputStyle() { return { width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: '#021425', color: '#dbeafe', boxSizing: 'border-box' }; }
-
   return (
-    <div style={pageStyle}>
-      <style>{`@media (max-width:980px){.cv-grid{grid-template-columns:1fr!important}}`}</style>
-
-      <div style={{ maxWidth: 1200, margin: '0 auto 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#e6f0ff' }}>Create Your CV</h2>
-          <div style={{ marginTop: 6, color: '#a7b8cf' }}>Fill out details and export a professional CV</div>
-        </div>
-
-      </div>
-
-      {loadError && (
-        <div className="mx-auto mb-6 max-w-5xl rounded-lg border border-rose-400 bg-rose-50 px-4 py-3 text-rose-700 text-sm">
-          {loadError}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button onClick={downloadHtml} style={{ background: 'linear-gradient(90deg,#0369a1,#06b6d4)', color: 'white', border: 'none', padding: '10px 14px', borderRadius: 10, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(3,105,161,0.18)' }} title="Download HTML CV">Download HTML</button>
-          <button onClick={downloadPdf} style={{ background: 'linear-gradient(90deg,#06b6d4,#10b981)', color: 'white', border: 'none', padding: '10px 14px', borderRadius: 10, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,182,212,0.12)' }} title="Download PDF">Download PDF</button>
-          <button onClick={openPrintPreview} style={{ background: 'linear-gradient(90deg,#06b6d4,#10b981)', color: 'white', border: 'none', padding: '10px 14px', borderRadius: 10, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,182,212,0.12)' }} title="Open print preview (save as PDF)">Print Preview</button>
-          <button onClick={handleSubmitApplication} disabled={submitting} style={{ background: 'linear-gradient(90deg,#7c3aed,#a78bfa)', color: 'white', border: 'none', padding: '10px 14px', borderRadius: 10, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', boxShadow: '0 8px 20px rgba(124,58,237,0.16)' }} title="Submit your application">{submitting ? 'Submitting…' : 'Submit Application'}</button>
-        </div>
-
-      <div className="cv-grid" style={containerStyle}>
-        <div style={{ ...panelStyle }}>
-          {/* Personal Info */}
-          <section style={{ marginBottom: 14 }}>
-            <h3 style={{ margin: 0, color: '#e6f0ff', fontSize: 16, fontWeight: 800 }}>Personal Information</h3>
-            <div style={{ marginTop: 12 }}>
-              <Input label="Full name" value={personal.fullName} onChange={(v)=>setPersonal({...personal, fullName:v})} placeholder="John Doe" />
-              <Input label="Professional title" value={personal.title} onChange={(v)=>setPersonal({...personal, title:v})} placeholder="Frontend Engineer" />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <Input label="Email" value={personal.email} onChange={(v)=>setPersonal({...personal, email:v})} placeholder="you@example.com" />
-                <Input label="Phone" value={personal.phone} onChange={(v)=>setPersonal({...personal, phone:v})} placeholder="+1 555 555 555" />
-              </div>
-              <Input label="Website / LinkedIn" value={personal.website} onChange={(v)=>setPersonal({...personal, website:v})} placeholder="https://..." />
-              <Input label="Address" value={personal.address} onChange={(v)=>setPersonal({...personal, address:v})} placeholder="City, Country" />
-              <div style={{ marginTop: 8 }}>
-                <label style={{ display: 'block', fontSize: 13, color: '#cfe7ff', marginBottom: 6, fontWeight: 700 }}>Summary</label>
-                <textarea value={personal.summary} onChange={(e)=>setPersonal({...personal, summary:e.target.value})} rows={4} placeholder="Short 1-2 sentence professional summary" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #d1d5db', resize: 'vertical', background: 'white', color: '#0b1220' }} />
-              </div>
-            </div>
-          </section>
-
-          {/* Education */}
-          <section style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, color: '#e6f0ff', fontSize: 16, fontWeight: 800 }}>Education</h3>
-              <div><button onClick={()=>addRow(setEducation, education)} style={tinyButtonStyle()}>+ Add</button></div>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              {education.map((ed, idx) => (
-                <div key={idx} style={{ marginBottom: 10, padding: 10, borderRadius: 8, background: '#031427', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input value={ed.degree} onChange={(e)=>updateRow(setEducation, education, idx, 'degree', e.target.value)} placeholder="Degree (e.g., B.Sc. Computer Science)" style={rowInputStyle()} />
-                    <input value={ed.institution} onChange={(e)=>updateRow(setEducation, education, idx, 'institution', e.target.value)} placeholder="Institution" style={rowInputStyle()} />
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <input value={ed.year} onChange={(e)=>updateRow(setEducation, education, idx, 'year', e.target.value)} placeholder="Year (e.g., 2024)" style={rowInputStyle()} />
-                    <input value={ed.gpa} onChange={(e)=>updateRow(setEducation, education, idx, 'gpa', e.target.value)} placeholder="GPA (optional)" style={rowInputStyle()} />
-                    <button onClick={()=>removeRow(setEducation, education, idx)} style={tinyDangerButtonStyle()}>Remove</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Work Experience */}
-          <section style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, color: '#e6f0ff', fontSize: 16, fontWeight: 800 }}>Work Experience</h3>
-              <div><button onClick={()=>addRow(setExperience, experience)} style={tinyButtonStyle()}>+ Add</button></div>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              {experience.map((ex, idx) => (
-                <div key={idx} style={{ marginBottom: 10, padding: 10, borderRadius: 8, background: '#031427', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <input value={ex.company} onChange={(e)=>updateRow(setExperience, experience, idx, 'company', e.target.value)} placeholder="Company" style={rowInputStyle()} />
-                    <input value={ex.role} onChange={(e)=>updateRow(setExperience, experience, idx, 'role', e.target.value)} placeholder="Role / Title" style={rowInputStyle()} />
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <input value={ex.start} onChange={(e)=>updateRow(setExperience, experience, idx, 'start', e.target.value)} placeholder="Start (e.g., Jan 2022)" style={rowInputStyle()} />
-                    <input value={ex.end} onChange={(e)=>updateRow(setExperience, experience, idx, 'end', e.target.value)} placeholder="End (e.g., Present)" style={rowInputStyle()} />
-                  </div>
-                  <div style={{ marginTop: 8 }}>
-                    <textarea value={ex.description} onChange={(e)=>updateRow(setExperience, experience, idx, 'description', e.target.value)} placeholder="Brief description of role & achievements" rows={3} style={{ ...rowInputStyle(), resize: 'vertical' }} />
-                    <div style={{ marginTop: 8, textAlign: 'right' }}><button onClick={()=>removeRow(setExperience, experience, idx)} style={tinyDangerButtonStyle()}>Remove</button></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Projects */}
-          <section style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, color: '#e6f0ff', fontSize: 16, fontWeight: 800 }}>Projects</h3>
-              <div><button onClick={()=>addRow(setProjects, projects)} style={tinyButtonStyle()}>+ Add</button></div>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              {projects.map((p, idx) => (
-                <div key={idx} style={{ marginBottom: 10, padding: 10, borderRadius: 8, background: '#031427', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <input value={p.name} onChange={(e)=>updateRow(setProjects, projects, idx, 'name', e.target.value)} placeholder="Project name" style={rowInputStyle()} />
-                  <textarea value={p.description} onChange={(e)=>updateRow(setProjects, projects, idx, 'description', e.target.value)} placeholder="Short description" rows={2} style={{ ...rowInputStyle(), marginTop: 8 }} />
-                  <input value={p.technologies} onChange={(e)=>updateRow(setProjects, projects, idx, 'technologies', e.target.value)} placeholder="Technologies (comma separated)" style={{ ...rowInputStyle(), marginTop: 8 }} />
-                  <div style={{ marginTop: 8, textAlign: 'right' }}><button onClick={()=>removeRow(setProjects, projects, idx)} style={tinyDangerButtonStyle()}>Remove</button></div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Certifications */}
-          <section style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, color: '#e6f0ff', fontSize: 16, fontWeight: 800 }}>Certifications</h3>
-              <div><button onClick={()=>addRow(setCertifications, certifications)} style={tinyButtonStyle()}>+ Add</button></div>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              {certifications.map((c, idx) => (
-                <div key={idx} style={{ marginBottom: 10, padding: 10, borderRadius: 8, background: '#031427', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input value={c.name} onChange={(e)=>updateRow(setCertifications, certifications, idx, 'name', e.target.value)} placeholder="Certification name" style={rowInputStyle()} />
-                    <input value={c.issuer} onChange={(e)=>updateRow(setCertifications, certifications, idx, 'issuer', e.target.value)} placeholder="Issuer" style={rowInputStyle()} />
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <input value={c.date} onChange={(e)=>updateRow(setCertifications, certifications, idx, 'date', e.target.value)} placeholder="Date (e.g., 2024)" style={rowInputStyle()} />
-                    <div style={{ marginLeft: 'auto' }}><button onClick={()=>removeRow(setCertifications, certifications, idx)} style={tinyDangerButtonStyle()}>Remove</button></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        {/* Right column preview / quick inputs */}
-        <div style={{ ...panelStyle }}>
-          <h3 style={{ margin: 0, color: '#e6f0ff', fontSize: 16, fontWeight: 800 }}>Skills</h3>
-          <div style={{ marginTop: 12 }}>
-            <label style={{ display: 'block', fontSize: 13, color: '#cfe7ff', marginBottom: 6, fontWeight: 700 }}>Technical (comma separated)</label>
-            <input value={skills.technical} onChange={(e)=>setSkills({...skills, technical: e.target.value})} placeholder="React, Node.js, SQL" style={rowInputStyle()} />
-            <label style={{ display: 'block', fontSize: 13, color: '#cfe7ff', marginTop: 12, marginBottom: 6, fontWeight: 700 }}>Soft Skills (comma separated)</label>
-            <input value={skills.soft} onChange={(e)=>setSkills({...skills, soft: e.target.value})} placeholder="Communication, Teamwork" style={rowInputStyle()} />
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">Build Your CV</h1>
+            <p className="text-slate-600">Create a professional curriculum vitae and submit your internship application</p>
           </div>
 
-          <hr style={{ border: 'none', height: 1, background: 'rgba(255,255,255,0.04)', margin: '18px 0' }} />
+          {loadError && (
+            <div className="mb-6 max-w-6xl rounded-lg border border-rose-400 bg-rose-50 px-4 py-3 text-rose-700 text-sm">
+              {loadError}
+            </div>
+          )}
 
-          <h3 style={{ margin: 0, color: '#e6f0ff', fontSize: 16, fontWeight: 800 }}>Quick Contact</h3>
-          <div style={{ marginTop: 12 }}>
-            <Input label="Email" value={personal.email} onChange={(v)=>setPersonal({...personal, email:v})} placeholder="you@example.com" />
-            <Input label="Phone" value={personal.phone} onChange={(v)=>setPersonal({...personal, phone:v})} placeholder="+1 555 555 555" />
-          </div>
-
-          <hr style={{ border: 'none', height: 1, background: 'rgba(255,255,255,0.04)', margin: '18px 0' }} />
-
-          <h3 style={{ margin: 0, color: '#e6f0ff', fontSize: 16, fontWeight: 800 }}>Preview</h3>
-          <div style={{ marginTop: 12 }}>
-            <div ref={previewRef} style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.03)' }}>
-              <div style={{ background: 'linear-gradient(90deg,#0369a1,#06b6d4)', color: 'white', padding: 12 }}>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>{personal.fullName || 'Your Name'}</div>
-                <div style={{ fontSize: 12, opacity: 0.95 }}>{personal.title || 'Professional Title'}</div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Form */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Personal Information */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">1</span>
+                  Personal Information
+                </h2>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Full Name *"
+                      value={personal.fullName}
+                      onChange={(e) => handlePersonalChange('fullName', e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email *"
+                      value={personal.email}
+                      onChange={(e) => handlePersonalChange('email', e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Phone"
+                      value={personal.phone}
+                      onChange={(e) => handlePersonalChange('phone', e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Professional Title"
+                      value={personal.title}
+                      onChange={(e) => handlePersonalChange('title', e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Website/Portfolio"
+                      value={personal.website}
+                      onChange={(e) => handlePersonalChange('website', e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Address"
+                      value={personal.address}
+                      onChange={(e) => handlePersonalChange('address', e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                  </div>
+                  <textarea
+                    placeholder="Professional Summary"
+                    value={personal.summary}
+                    onChange={(e) => handlePersonalChange('summary', e.target.value)}
+                    rows="4"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition resize-none"
+                  />
+                </div>
               </div>
-              <div style={{ padding: 12, background: '#031427', color: '#cfe7ff' }}>
-                <div style={{ fontSize: 13, marginBottom: 6, color: '#cfe7ff' }}>{personal.summary ? (personal.summary.length > 120 ? personal.summary.slice(0, 120) + '…' : personal.summary) : 'Add a short summary to highlight your profile'}</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{skills.technical ? skills.technical.split(',').slice(0,6).map((s,i)=>(<span key={i} style={{ background: '#052f44', color: '#9be7ff', padding: '6px 8px', borderRadius: 999, fontSize: 12 }}>{s.trim()}</span>)) : <span style={{ color: '#94a3b8' }}>Add technical skills</span>}</div>
+
+              {/* Education */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold">2</span>
+                    Education
+                  </h2>
+                  <button
+                    onClick={() => addRow(setEducation, education)}
+                    className="px-3 py-1 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                  >
+                    + Add
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {education.map((edu, idx) => (
+                    <div key={edu.id || idx} className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          placeholder="Degree"
+                          value={edu.degree}
+                          onChange={(e) => handleEducationUpdate(idx, 'degree', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Institution"
+                          value={edu.institution}
+                          onChange={(e) => handleEducationUpdate(idx, 'institution', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          placeholder="Graduation Year"
+                          value={edu.year}
+                          onChange={(e) => handleEducationUpdate(idx, 'year', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                        <input
+                          type="text"
+                          placeholder="GPA (optional)"
+                          value={edu.gpa}
+                          onChange={(e) => handleEducationUpdate(idx, 'gpa', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removeRow(setEducation, education, idx)}
+                        className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 transition"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Work Experience */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">3</span>
+                    Work Experience
+                  </h2>
+                  <button
+                    onClick={() => addRow(setExperience, experience)}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    + Add
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {experience.map((exp, idx) => (
+                    <div key={exp.id || idx} className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          placeholder="Job Title"
+                          value={exp.role}
+                          onChange={(e) => handleExperienceUpdate(idx, 'role', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Company"
+                          value={exp.company}
+                          onChange={(e) => handleExperienceUpdate(idx, 'company', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          placeholder="Start Date"
+                          value={exp.start}
+                          onChange={(e) => handleExperienceUpdate(idx, 'start', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                        <input
+                          type="text"
+                          placeholder="End Date"
+                          value={exp.end}
+                          onChange={(e) => handleExperienceUpdate(idx, 'end', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                      </div>
+                      <textarea
+                        placeholder="Job Description"
+                        value={exp.description}
+                        onChange={(e) => handleExperienceUpdate(idx, 'description', e.target.value)}
+                        rows="3"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm resize-none transition"
+                      />
+                      <button
+                        onClick={() => removeRow(setExperience, experience, idx)}
+                        className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 transition"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Projects */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-bold">4</span>
+                    Projects
+                  </h2>
+                  <button
+                    onClick={() => addRow(setProjects, projects)}
+                    className="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                  >
+                    + Add
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {projects.map((proj, idx) => (
+                    <div key={proj.id || idx} className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Project Name"
+                        value={proj.name}
+                        onChange={(e) => handleProjectsUpdate(idx, 'name', e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm transition"
+                      />
+                      <textarea
+                        placeholder="Project Description"
+                        value={proj.description}
+                        onChange={(e) => handleProjectsUpdate(idx, 'description', e.target.value)}
+                        rows="2"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm resize-none transition"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Technologies Used (comma-separated)"
+                        value={proj.technologies}
+                        onChange={(e) => handleProjectsUpdate(idx, 'technologies', e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm transition"
+                      />
+                      <button
+                        onClick={() => removeRow(setProjects, projects, idx)}
+                        className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 transition"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Certifications */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center text-sm font-bold">5</span>
+                    Certifications
+                  </h2>
+                  <button
+                    onClick={() => addRow(setCertifications, certifications)}
+                    className="px-3 py-1 text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
+                  >
+                    + Add
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {certifications.map((cert, idx) => (
+                    <div key={cert.id || idx} className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          placeholder="Certification Name"
+                          value={cert.name}
+                          onChange={(e) => handleCertificationsUpdate(idx, 'name', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Issuing Organization"
+                          value={cert.issuer}
+                          onChange={(e) => handleCertificationsUpdate(idx, 'issuer', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none text-sm transition"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Date Obtained"
+                        value={cert.date}
+                        onChange={(e) => handleCertificationsUpdate(idx, 'date', e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none text-sm transition"
+                      />
+                      <button
+                        onClick={() => removeRow(setCertifications, certifications, idx)}
+                        className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 transition"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Skills */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold">6</span>
+                  Skills
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Technical Skills (comma-separated)</label>
+                    <textarea
+                      placeholder="e.g. JavaScript, React, Node.js, MongoDB"
+                      value={skills.technical}
+                      onChange={(e) => handleSkillsChange('technical', e.target.value)}
+                      rows="3"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Soft Skills (comma-separated)</label>
+                    <textarea
+                      placeholder="e.g. Communication, Leadership, Problem Solving"
+                      value={skills.soft}
+                      onChange={(e) => handleSkillsChange('soft', e.target.value)}
+                      rows="3"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none transition"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
-            <button onClick={downloadHtml} style={{ flex: 1, background: '#0ea5e9', border: 'none', color: 'white', padding: 10, borderRadius: 8, fontWeight: 700 }}>Download HTML</button>
-            <button onClick={openPrintPreview} style={{ flex: 1, background: '#10b981', border: 'none', color: 'white', padding: 10, borderRadius: 8, fontWeight: 700 }}>Print / Save PDF</button>
+            {/* Preview & Actions Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sticky top-24 space-y-4">
+                <h3 className="text-lg font-bold text-slate-900">Actions</h3>
+                
+                <button
+                  onClick={downloadPdf}
+                  disabled={submitting}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-2"
+                >
+                  📥 Download PDF
+                </button>
+
+                <button
+                  onClick={openPrintPreview}
+                  disabled={submitting}
+                  className="w-full px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-2"
+                >
+                  🖨️ Print Preview
+                </button>
+
+                <button
+                  onClick={handleSubmitApplication}
+                  disabled={submitting || !personal.fullName.trim()}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-2"
+                >
+                  {submitting ? '⏳ Submitting...' : '✅ Submit Application'}
+                </button>
+
+                <div className="border-t border-slate-200 pt-4">
+                  <h4 className="font-semibold text-slate-700 mb-3">Preview</h4>
+                  <div
+                    ref={previewRef}
+                    className="bg-slate-50 border border-slate-300 rounded-lg p-4 text-xs max-h-96 overflow-auto"
+                    style={{ fontSize: '10px', lineHeight: '1.3' }}
+                    dangerouslySetInnerHTML={{ __html: buildCvHtml() }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-

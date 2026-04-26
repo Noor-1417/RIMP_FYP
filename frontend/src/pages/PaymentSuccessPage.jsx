@@ -151,7 +151,7 @@ export const PaymentSuccessPage = () => {
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>✓ You have been enrolled in the internship</li>
                   <li>✓ Check your email for confirmation</li>
-                  <li>✓ Access your dashboard to view tasks</li>
+                  <li>✓ Start your AI-powered internship journey</li>
                 </ul>
               </div>
 
@@ -160,9 +160,9 @@ export const PaymentSuccessPage = () => {
                 <Button
                   variant="primary"
                   fullWidth
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate('/ai-chatbot')}
                 >
-                  Go to Dashboard
+                  Start Internship with AI
                 </Button>
                 <Button
                   variant="secondary"
@@ -184,3 +184,4 @@ export const PaymentSuccessPage = () => {
     </div>
   );
 };
+

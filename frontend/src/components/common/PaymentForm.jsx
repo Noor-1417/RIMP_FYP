@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
-import { api } from '../../services/api';
+import api from '../../services/api';
 
 export const PaymentForm = ({
   planDuration,
@@ -59,7 +59,7 @@ export const PaymentForm = ({
 
     try {
       // Step 1: Create payment intent on backend
-      const intentResponse = await api.post('/api/subscriptions/create-payment-intent', {
+      const intentResponse = await api.post('/subscriptions/create-payment-intent', {
         planDuration,
       });
 
@@ -94,7 +94,7 @@ export const PaymentForm = ({
       console.log('✓ Payment succeeded with Stripe');
 
       // Step 3: Confirm payment on our backend
-      const confirmResponse = await api.post('/api/subscriptions/confirm-payment', {
+      const confirmResponse = await api.post('/subscriptions/confirm-payment', {
         paymentIntentId,
       });
 

@@ -5,7 +5,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../services/api';
+import api from '../services/api';
 
 const SubscriptionContext = createContext();
 
@@ -34,7 +34,7 @@ export const SubscriptionProvider = ({ children }) => {
   const checkAccess = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/subscriptions/check-access');
+      const response = await api.get('/subscriptions/check-access');
       setSubscription(response.data.subscription);
       setError(null);
       return response.data;
@@ -49,7 +49,7 @@ export const SubscriptionProvider = ({ children }) => {
   // Start free trial
   const startTrial = async () => {
     try {
-      const response = await api.post('/api/subscriptions/start-trial');
+      const response = await api.post('/subscriptions/start-trial');
       setSubscription(response.data.subscription);
       return response.data;
     } catch (err) {
@@ -61,7 +61,7 @@ export const SubscriptionProvider = ({ children }) => {
   // Upgrade to premium plan
   const upgradePlan = async (planDuration, paymentIntentId) => {
     try {
-      const response = await api.post('/api/subscriptions/upgrade-plan', {
+      const response = await api.post('/subscriptions/upgrade-plan', {
         planDuration,
         paymentMethod: 'stripe',
         paymentIntentId,
@@ -77,7 +77,7 @@ export const SubscriptionProvider = ({ children }) => {
   // Cancel subscription
   const cancelSubscription = async () => {
     try {
-      const response = await api.post('/api/subscriptions/cancel');
+      const response = await api.post('/subscriptions/cancel');
       setSubscription(response.data.subscription);
       return response.data;
     } catch (err) {

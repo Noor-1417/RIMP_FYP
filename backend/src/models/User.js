@@ -39,6 +39,13 @@ const userSchema = new mongoose.Schema(
     internshipTitle: String,
     startDate: Date,
     endDate: Date,
+    // Profile fields for AI recommendations
+    skills: {
+      technical: String,
+      soft: String,
+    },
+    field: String,
+    interest: String,
     isActive: {
       type: Boolean,
       default: true,

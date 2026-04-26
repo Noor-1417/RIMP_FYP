@@ -31,6 +31,9 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const storageRoutes = require('./routes/storageRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
+const projectRoutes = require('./routes/projectRoutes');
+const aiRoutes = require('./routes/aiRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -43,6 +46,9 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/storage', storageRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

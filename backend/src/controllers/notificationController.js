@@ -155,7 +155,7 @@ exports.markAllAsRead = async (req, res, next) => {
 // @access  Private
 exports.deleteNotification = async (req, res, next) => {
   try {
-    const notification = await Notification.findByIdAndRemove(req.params.id);
+    const notification = await Notification.findByIdAndDelete(req.params.id);
 
     if (!notification) {
       return res.status(404).json({

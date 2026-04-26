@@ -153,7 +153,7 @@ exports.updateQuiz = async (req, res, next) => {
 // @access  Private/Admin/Manager
 exports.deleteQuiz = async (req, res, next) => {
   try {
-    const quiz = await Quiz.findByIdAndRemove(req.params.id);
+    const quiz = await Quiz.findByIdAndDelete(req.params.id);
 
     if (!quiz) {
       return res.status(404).json({

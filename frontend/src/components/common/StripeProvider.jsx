@@ -7,7 +7,7 @@
 import React, { useEffect, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
-import { api } from '../services/api';
+import api from '../services/api';
 
 let stripePromise;
 
@@ -18,7 +18,7 @@ export const StripeProvider = ({ children }) => {
     const initStripe = async () => {
       try {
         // Fetch public key from backend
-        const response = await api.get('/api/subscriptions/stripe-public-key');
+        const response = await api.get('/subscriptions/stripe-public-key');
         const { publicKey } = response.data;
 
         // Load Stripe

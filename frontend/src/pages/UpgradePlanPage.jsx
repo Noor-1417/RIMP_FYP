@@ -23,7 +23,7 @@ const UpgradePlanPageContent = () => {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const response = await fetch('/api/subscriptions/plans');
+        const response = await fetch('/subscriptions/plans');
         const data = await response.json();
         const premiumPlans = data.plans.filter((p) => p.id !== 'trial');
         setPlans(premiumPlans);

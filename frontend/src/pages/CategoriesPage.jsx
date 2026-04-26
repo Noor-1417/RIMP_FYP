@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Pagination } from '../components/common/LayoutElements';
 import { Button } from '../components/common/FormElements';
 import { Navbar } from '../components/layout/Navbar';
-import { categoryService } from '../services';
+import { categoryService, projectService } from '../services';
 import toast from 'react-hot-toast';
 
 export const CategoriesPage = () => {
@@ -54,6 +54,18 @@ export const CategoriesPage = () => {
         // Redirect to Stripe Checkout
         window.location.href = response.data.checkoutUrl;
       } else {
+        // ✅ FREE enrollment - generate AI project first
+        console.log('Free enrollment ID:', response.data?.data?._id);
+        try {
+          const projectResponse = await projectService.generateInternship({
+            enrollmentId: response.data?.data?._id, // enrollment ID from response
+          });
+          console.log('✅ AI Project generated after free enrollment:', projectResponse.data);
+        } catch (projectError) {
+          console.error('❌ Failed to generate AI project:', projectError);
+          // Don't fail enrollment if project generation fails
+        }
+
         // ✅ FREE enrollment - show success and redirect to dashboard
         toast.success('Enrolled successfully!');
         navigate('/dashboard');
@@ -273,3 +285,4 @@ export const CategoriesPage = () => {
     </div>
   );
 };
+

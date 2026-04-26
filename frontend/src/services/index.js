@@ -8,6 +8,7 @@ export const authService = {
   getMe: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
   updatePassword: (data) => api.put('/auth/password', data),
+  generateInternship: (data) => api.post('/auth/generate-internship', data),
   logout: () => api.get('/auth/logout'),
 };
 
@@ -79,6 +80,14 @@ export const notificationService = {
   delete: (id) => api.delete(`/notifications/${id}`),
 };
 
+// Project Services
+export const projectService = {
+  generateInternship: (data) => api.post('/projects/generate-internship', data),
+  getProject: (enrollmentId) => api.get(`/projects/${enrollmentId}`),
+  submitTask: (enrollmentId, data) => api.post(`/projects/${enrollmentId}/submit-task`, data),
+  getProgress: (enrollmentId) => api.get(`/projects/${enrollmentId}/progress`),
+};
+
 const services = {
   authService,
   adminService,
@@ -88,7 +97,9 @@ const services = {
   certificateService,
   paymentService,
   notificationService,
+  projectService,
   storageService,
 };
 
 export default services;
+

@@ -30,6 +30,7 @@ import TasksPage from './pages/TasksPage';
 import TaskDetail from './pages/TaskDetail';
 import CVBuilderPage from './pages/CVBuilderPage';
 import StudentDashboard from './pages/StudentDashboard';
+import { AIChatbot } from './pages/AIChatbot';
 
 // Protected Route Component
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
@@ -261,6 +262,15 @@ function App() {
           }
         />
 
+        <Route
+          path="/ai-chatbot"
+          element={
+            <ProtectedRoute user={user}>
+              <AIChatbot />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Redirect to dashboard if authenticated, else to login */}
         <Route
           path="/"
@@ -290,3 +300,4 @@ function App() {
 }
 
 export default App;
+

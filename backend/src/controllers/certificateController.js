@@ -242,7 +242,7 @@ exports.downloadCertificate = async (req, res, next) => {
 // @access  Private/Admin
 exports.deleteCertificate = async (req, res, next) => {
   try {
-    const certificate = await Certificate.findByIdAndRemove(req.params.id);
+    const certificate = await Certificate.findByIdAndDelete(req.params.id);
 
     if (!certificate) {
       return res.status(404).json({
