@@ -8,10 +8,12 @@ const {
   deleteQuiz,
   submitQuiz,
   getQuizResults,
+  getAvailableQuizzes,
 } = require('../controllers/quizController');
 const { protect, authorize } = require('../middleware/auth');
 
 // Protected routes
+router.get('/available', protect, authorize('intern'), getAvailableQuizzes);
 router.get('/', protect, getAllQuizzes);
 router.get('/:id', protect, getQuiz);
 router.post('/:id/submit', protect, authorize('intern'), submitQuiz);

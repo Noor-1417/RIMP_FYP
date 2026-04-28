@@ -7,8 +7,12 @@ const InternshipCategory = require('../models/InternshipCategory');
 exports.getAllQuizzes = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, category, week } = req.query;
+    const { role, id: userId } = req.user;
 
-    let query = { isPublished: true };
+    let query = {};
+    if (role === 'intern') {
+      query.isPublished = true;
+    }
     if (category) query.category = category;
     if (week) query.week = week;
 
@@ -297,5 +301,71 @@ exports.getQuizResults = async (req, res, next) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+// @desc    Get available quizzes for student (After 2 tasks)
+// @route   GET /api/quizzes/available
+// @access  Private
+exports.getAvailableQuizzes = async (req, res, next) => {
+  try {
+    const InternshipTask = require('../models/InternshipTask');
+    const Enrollment = require('../models/Enrollment');
+    const userId = req.user.id;
+
+    const enrollments = await Enrollment.find({ intern: userId }).populate('category');
+    if (!enrollments.length) return res.status(200).json({ success: true, data: [] });
+
+    let allQuizzes = [];
+
+    for (const enrollment of enrollments) {
+      const approvedCount = await InternshipTask.countDocuments({
+        internshipId: enrollment._id,
+        status: 'approved'
+      });
+
+      const quizzes = await Quiz.find({
+        category: enrollment.category._id,
+        isPublished: true
+      }).populate('category', 'name icon color');
+
+      quizzes.forEach(quiz => {
+        const qObj = quiz.toObject();
+        const requiredTasks = quiz.week * 2;
+        const isUnlocked = approvedCount >= requiredTasks;
+
+        qObj.unlocked = isUnlocked;
+        qObj.tasksNeeded = Math.max(0, requiredTasks - approvedCount);
+        qObj.totalRequired = requiredTasks;
+        qObj.enrollmentId = enrollment._id;
+
+        // Filter questions if unlocked, else empty them
+        if (isUnlocked) {
+          qObj.questions = qObj.questions.map((q) => {
+            const { correctAnswer, ...rest } = q;
+            if (rest.options) {
+              rest.options = rest.options.map((opt) => ({ text: opt.text, _id: opt._id }));
+            }
+            return rest;
+          });
+          const userAttempt = quiz.attempts.find(a => a.intern.toString() === userId);
+          qObj.hasAttempted = !!userAttempt;
+          qObj.lastScore = userAttempt ? userAttempt.percentage : null;
+          qObj.isPassed = userAttempt ? userAttempt.isPassed : null;
+        } else {
+          qObj.questions = []; // Hide questions if locked
+        }
+        
+        delete qObj.attempts;
+        allQuizzes.push(qObj);
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: allQuizzes
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

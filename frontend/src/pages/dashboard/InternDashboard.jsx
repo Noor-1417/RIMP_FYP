@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend, Area, AreaChart,
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { FiClock } from 'react-icons/fi';
 import { Navbar } from '../../components/layout/Navbar';
 import { useAuth } from '../../hooks/useAuth';
-import { internshipTaskService } from '../../services';
+import { internshipTaskService, quizService } from '../../services';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -62,6 +63,8 @@ export const InternDashboard = () => {
 
   const [progress,     setProgress]     = useState(null);
   const [enrollments,  setEnrollments]  = useState([]);
+  const [quizzes,      setQuizzes]      = useState([]);
+  const [quizData,     setQuizData]     = useState(null);
   const [application,  setApplication]  = useState(null);
   const [loading,      setLoading]      = useState(true);
 
@@ -74,6 +77,16 @@ export const InternDashboard = () => {
       ]);
       if (pRes.data?.success) setProgress(pRes.data.data);
       if (eRes.data?.success) setEnrollments(eRes.data.enrollments || []);
+      
+      // Fetch available quizzes
+      try {
+        const qRes = await quizService.getAvailable();
+        if (qRes.data?.success) {
+          setQuizzes(qRes.data.data || []);
+          setQuizData(qRes.data);
+        }
+      } catch (_) {}
+
       try {
         const aRes = await api.get(`/applications/user/${user._id}`);
         if (aRes.data?.data) setApplication(aRes.data.data);
@@ -317,6 +330,114 @@ export const InternDashboard = () => {
             )}
           </motion.div>
         </div>
+        
+        {/* ══ ADMIN QUIZZES (Theory based) ══════════════════ */}
+        <AnimatePresence>
+          {quizData && (
+            <motion.div {...fade(0.52)} className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-lg">📝</span>
+                  Admin Quizzes
+                </h3>
+                <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 uppercase tracking-wider">
+                  1 Quiz per 2 Tasks
+                </span>
+              </div>
+
+              {/* Unlocked Quizzes */}
+              {quizzes.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  {quizzes.map((quiz) => (
+                    <motion.div 
+                      key={quiz._id}
+                      whileHover={{ y: -4 }}
+                      className="bg-white rounded-2xl border border-blue-100 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-xl" style={{ color: quiz.category?.color }}>
+                            {quiz.category?.icon || '📚'}
+                          </div>
+                          {quiz.hasAttempted ? (
+                            <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full ${quiz.isPassed ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                              {quiz.isPassed ? `Passed: ${Math.round(quiz.lastScore)}%` : 'Failed'}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-blue-50 text-blue-600">
+                              New
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="font-bold text-primary mb-1 line-clamp-1">{quiz.title}</h4>
+                        <p className="text-xs text-slate-400 mb-4 line-clamp-2">Topic covered in your recent tasks</p>
+                        
+                        <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-6">
+                          <span className="flex items-center gap-1"><FiClock /> {quiz.timeLimit}m</span>
+                          <span className="flex items-center gap-1">📝 {quiz.questions.length} Qs</span>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => navigate(`/quiz/${quiz._id}`)}
+                        className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
+                          quiz.hasAttempted && quiz.isPassed 
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                          : 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/10'
+                        }`}
+                        disabled={quiz.hasAttempted && quiz.isPassed}
+                      >
+                        {quiz.hasAttempted ? (quiz.isPassed ? 'Completed' : 'Retake Quiz') : 'Start Quiz'}
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upcoming (Locked) Quizzes */}
+              {quizData.lockInfo && quizData.lockInfo.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {quizData.lockInfo.map((info, idx) => (
+                    <div key={idx} className="bg-slate-50/50 border border-slate-200 border-dashed rounded-2xl p-4 flex items-center justify-between group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg grayscale opacity-50">
+                          🔒
+                        </div>
+                        <div>
+                          <h5 className="text-sm font-bold text-slate-600 line-clamp-1">{info.title}</h5>
+                          <p className="text-[10px] text-slate-400 font-medium">Unlocked after {info.totalRequired} tasks</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                         <div className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 mb-1">
+                           {info.tasksNeeded} tasks left
+                         </div>
+                         <div className="w-24 h-1 bg-slate-200 rounded-full overflow-hidden">
+                           <div 
+                             className="h-full bg-amber-400" 
+                             style={{ width: `${(info.currentApproved / info.totalRequired) * 100}%` }}
+                           />
+                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {quizzes.length === 0 && (!quizData.lockInfo || quizData.lockInfo.length === 0) && (
+                <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-12 text-center">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm text-2xl">
+                    📚
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-700">No Assessments Yet</h4>
+                  <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+                    Enroll in a course and complete tasks to start receiving conceptual assessments.
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ══ QUICK ACTIONS ══════════════════════════════════ */}
         <motion.div {...fade(0.55)} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">

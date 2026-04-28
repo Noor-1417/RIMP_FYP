@@ -32,6 +32,11 @@ import CVBuilderPage from './pages/CVBuilderPage';
 import StudentDashboard from './pages/StudentDashboard';
 import InternshipTasksPage from './pages/InternshipTasksPage';
 import StudentProgressDashboard from './pages/StudentProgressDashboard';
+import { VerifyPage } from './pages/VerifyPage';
+import { AdminQuizzesPage } from './pages/admin/AdminQuizzesPage';
+import { QuizTakePage } from './pages/QuizTakePage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
@@ -72,6 +77,10 @@ function App() {
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/verify/:certificateNumber" element={<VerifyPage />} />
+        <Route path="/verify/:certificateNumber" element={<VerifyPage />} />
 
         {/* Protected Routes */}
 
@@ -127,6 +136,24 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/quizzes"
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin']}>
+              <AdminQuizzesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/quiz/:id"
+          element={
+            <ProtectedRoute user={user} allowedRoles={['intern']}>
+              <QuizTakePage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/dashboard"
           element={

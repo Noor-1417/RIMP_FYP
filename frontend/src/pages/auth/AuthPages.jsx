@@ -137,6 +137,12 @@ export const LoginPage = () => {
             </button>
           </div>
 
+          <div className="flex justify-end mt-[-1rem]">
+            <Link to="/forgot-password" size="sm" className="text-sm font-semibold text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+
           <Button
             type="submit"
             variant="primary"

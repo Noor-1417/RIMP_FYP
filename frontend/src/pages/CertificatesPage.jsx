@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
 import { certificateService, internshipTaskService } from '../services';
 import { useAuth } from '../hooks/useAuth';
@@ -15,63 +16,96 @@ function gradeColor(g) { return GRADE_COLOR[g] || '#0A3D62'; }
 const CertTemplate = React.forwardRef(({ cert }, ref) => (
   <div ref={ref} id={`cert-${cert._id}`}
     style={{
-      width: 900, height: 636, background: 'linear-gradient(135deg,#fefce8 0%,#fef9c3 100%)',
-      border: '18px solid #0A3D62', boxShadow: 'inset 0 0 0 2px #fff, inset 0 0 0 4px #0A3D62',
+      width: 900, height: 636, background: 'white',
+      border: '22px solid #0A3D62', boxShadow: 'inset 0 0 0 4px #74B9FF, 0 10px 30px rgba(0,0,0,0.1)',
       fontFamily: 'Georgia, serif', position: 'relative', overflow: 'hidden', borderRadius: 4,
     }}>
+    {/* Subtle Watermark */}
+    <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%, -50%) rotate(-30deg)', fontSize:120, fontWeight:900, color:'rgba(10, 61, 98, 0.03)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:0 }}>
+        VERIFIED CERTIFICATE
+    </div>
+
     {/* Corner ornaments */}
     {[['0,0','0deg'],['100%,0','90deg'],['100%,100%','180deg'],['0,100%','270deg']].map(([pos,rot],i)=>(
-      <div key={i} style={{ position:'absolute', top:pos.split(',')[1]==='0'?8:'auto', bottom:pos.split(',')[1]==='100%'?8:'auto', left:pos.split(',')[0]==='0'?8:'auto', right:pos.split(',')[0]==='100%'?8:'auto', width:48, height:48, borderTop:`4px solid #0A3D62`, borderLeft:`4px solid #0A3D62`, transform:`rotate(${rot})` }}/>
+      <div key={i} style={{ position:'absolute', top:pos.split(',')[1]==='0'?12:'auto', bottom:pos.split(',')[1]==='100%'?12:'auto', left:pos.split(',')[0]==='0'?12:'auto', right:pos.split(',')[0]==='100%'?12:'auto', width:60, height:60, borderTop:`5px solid #0A3D62`, borderLeft:`5px solid #0A3D62`, transform:`rotate(${rot})`, zIndex:1 }}/>
     ))}
 
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', padding:'40px 60px', textAlign:'center' }}>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', padding:'40px 80px', textAlign:'center', position:'relative', zIndex:2 }}>
       {/* Header */}
-      <div style={{ fontSize:11, letterSpacing:6, color:'#64748b', textTransform:'uppercase', marginBottom:6 }}>Remote Internship Management Platform</div>
-      <div style={{ fontSize:46, fontWeight:700, color:'#0A3D62', letterSpacing:4, textTransform:'uppercase', lineHeight:1.1, marginBottom:4 }}>Certificate</div>
-      <div style={{ fontSize:16, color:'#475569', letterSpacing:3, textTransform:'uppercase', marginBottom:28 }}>of Completion</div>
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+          <div style={{ width:40, height:40, background:'#0A3D62', borderRadius:8, color:'white', fontWeight:900, fontSize:24, display:'flex', alignItems:'center', justifyContent:'center' }}>R</div>
+          <div style={{ fontSize:14, letterSpacing:4, color:'#0A3D62', fontWeight:700, textTransform:'uppercase' }}>RIMP AI PLATFORM</div>
+      </div>
 
-      <div style={{ fontSize:13, color:'#64748b', marginBottom:8 }}>This is to certify that</div>
-      <div style={{ fontSize:36, fontWeight:700, color:'#0A3D62', marginBottom:6, borderBottom:'2px solid #74B9FF', paddingBottom:8, minWidth:320 }}>
+      <div style={{ fontSize:48, fontWeight:900, color:'#0A3D62', letterSpacing:8, textTransform:'uppercase', lineHeight:1.1, marginBottom:4 }}>Certificate</div>
+      <div style={{ fontSize:18, color:'#74B9FF', letterSpacing:4, textTransform:'uppercase', fontWeight:600, marginBottom:32 }}>of Excellence</div>
+
+      <div style={{ fontSize:14, color:'#64748b', fontStyle:'italic', marginBottom:12 }}>This prestigious award is presented to</div>
+      <div style={{ fontSize:42, fontWeight:800, color:'#0A3D62', marginBottom:6, borderBottom:'3px solid #74B9FF', paddingBottom:12, minWidth:450, fontFamily:'"Times New Roman", Times, serif' }}>
         {cert.intern?.firstName} {cert.intern?.lastName}
       </div>
-      <div style={{ fontSize:13, color:'#64748b', margin:'14px 0 6px' }}>has successfully completed the AI-powered internship program in</div>
-      <div style={{ fontSize:22, fontWeight:700, color:'#74B9FF', marginBottom:24 }}>
-        {cert.category?.icon || ''} {cert.category?.name}
+      <div style={{ fontSize:14, color:'#64748b', margin:'16px 0 8px' }}>for outstanding performance and successful completion of the internship in</div>
+      <div style={{ fontSize:26, fontWeight:700, color:'#0A3D62', marginBottom:32, display:'flex', alignItems:'center', gap:10 }}>
+        <span style={{ fontSize:32 }}>{cert.category?.icon || '🚀'}</span>
+        {cert.category?.name}
       </div>
 
       {/* Stats row */}
-      <div style={{ display:'flex', gap:48, marginBottom:28 }}>
+      <div style={{ display:'flex', gap:60, marginBottom:40, background:'rgba(116, 185, 255, 0.05)', padding:'15px 40px', borderRadius:20, border:'1px solid rgba(116, 185, 255, 0.2)' }}>
         {[
           ['Grade', cert.grade, gradeColor(cert.grade)],
-          ['Score', `${cert.score}%`, '#0A3D62'],
-          ['Tasks', `${cert.tasksCompleted}/${cert.totalTasks}`, '#10b981'],
-          ['Duration', `${cert.metadata?.internshipDuration || '—'} wks`, '#8b5cf6'],
+          ['Final Score', `${cert.score}%`, '#0A3D62'],
+          ['Completion', '100%', '#10b981'],
         ].map(([l,v,c])=>(
           <div key={l} style={{ textAlign:'center' }}>
-            <div style={{ fontSize:22, fontWeight:700, color:c }}>{v}</div>
-            <div style={{ fontSize:11, color:'#94a3b8', textTransform:'uppercase', letterSpacing:2 }}>{l}</div>
+            <div style={{ fontSize:26, fontWeight:800, color:c }}>{v}</div>
+            <div style={{ fontSize:11, color:'#94a3b8', textTransform:'uppercase', letterSpacing:2, fontWeight:700 }}>{l}</div>
           </div>
         ))}
       </div>
 
       {/* QR + footer */}
-      <div style={{ display:'flex', alignItems:'flex-end', gap:32 }}>
-        {cert.qrCode && <img src={cert.qrCode} alt="QR" style={{ width:72, height:72 }}/>}
-        <div style={{ textAlign:'left' }}>
-          <div style={{ fontSize:11, color:'#94a3b8' }}>Certificate No.</div>
-          <div style={{ fontSize:12, fontWeight:700, color:'#0A3D62', fontFamily:'monospace' }}>{cert.certificateNumber}</div>
-          <div style={{ fontSize:11, color:'#94a3b8', marginTop:4 }}>Issued: {new Date(cert.issueDate).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', borderTop:'1px solid #e2e8f0', paddingTop:25 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:15 }}>
+            {cert.qrCode && <div style={{ padding:6, background:'white', border:'1px solid #e2e8f0', borderRadius:8 }}><img src={cert.qrCode} alt="QR" style={{ width:64, height:64 }}/></div>}
+            <div style={{ textAlign:'left' }}>
+              <div style={{ fontSize:10, color:'#94a3b8', fontWeight:700, textTransform:'uppercase' }}>Verification ID</div>
+              <div style={{ fontSize:13, fontWeight:700, color:'#0A3D62', fontFamily:'monospace' }}>{cert.certificateNumber}</div>
+              <div style={{ fontSize:10, color:'#94a3b8', marginTop:4 }}>Issued: {new Date(cert.issueDate).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
+            </div>
         </div>
-        <div style={{ textAlign:'center', marginLeft:16 }}>
-          <div style={{ width:120, borderTop:'2px solid #0A3D62', paddingTop:6, fontSize:11, color:'#64748b' }}>
-            RIMP AI Platform<br/><span style={{ fontSize:10, color:'#94a3b8' }}>Authorized Signature</span>
-          </div>
+
+        <div style={{ textAlign:'center' }}>
+            <div style={{ color:'#0A3D62', fontWeight:900, fontSize:22, fontStyle:'italic', marginBottom:2, fontFamily:'"Brush Script MT", cursive' }}>RIMP Board</div>
+            <div style={{ width:160, borderTop:'2px solid #0A3D62', paddingTop:6, fontSize:11, color:'#64748b', fontWeight:700, textTransform:'uppercase' }}>
+                Authorized Signature
+            </div>
         </div>
       </div>
     </div>
   </div>
 ));
 CertTemplate.displayName = 'CertTemplate';
+
+/* ── Reusable Download Function ─────────────────────── */
+const downloadCertificate = async (cert, elementId) => {
+  try {
+    const { default: html2canvas } = await import('html2canvas');
+    const { default: jsPDF }       = await import('jspdf');
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: null });
+    const img    = canvas.toDataURL('image/png');
+    const pdf    = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    pdf.addImage(img, 'PNG', 0, 0, 297, 210);
+    pdf.save(`RIMP-${cert.certificateNumber}.pdf`);
+    await certificateService.download(cert._id).catch(()=>{});
+    toast.success('Certificate downloaded!');
+  } catch (err) {
+    console.error(err);
+    toast.error('Download failed');
+  }
+};
 
 /* ── Enrollment Progress Card ─────────────────────────── */
 function EnrollmentCard({ enrollment, cert, onGenerate, generating }) {
@@ -82,11 +116,11 @@ function EnrollmentCard({ enrollment, cert, onGenerate, generating }) {
 
   return (
     <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }}
-      className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
       {/* Top bar */}
       <div className="h-1.5 w-full" style={{ background: allDone ? '#10b981' : 'linear-gradient(90deg,#0A3D62,#74B9FF)', backgroundSize:`${pct}% 100%`, backgroundRepeat:'no-repeat', backgroundColor:'#e2e8f0' }}/>
 
-      <div className="p-5">
+      <div className="p-5 flex-1">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shadow-sm"
@@ -114,9 +148,13 @@ function EnrollmentCard({ enrollment, cert, onGenerate, generating }) {
               className="h-full rounded-full"
               style={{ background: allDone ? '#10b981' : 'linear-gradient(90deg,#0A3D62,#74B9FF)' }}/>
           </div>
-          {!allDone && total > 0 && (
-            <p className="text-xs text-slate-400 mt-1.5">{total - done} task{total-done!==1?'s':''} remaining to unlock certificate</p>
-          )}
+        </div>
+
+        {/* Action Links */}
+        <div className="mb-4 flex gap-2">
+            <Link to={`/my-tasks/${enrollment._id}`} className="text-xs font-bold text-secondary hover:underline flex items-center gap-1">
+                View Tasks →
+            </Link>
         </div>
 
         {/* Certificate status */}
@@ -125,7 +163,7 @@ function EnrollmentCard({ enrollment, cert, onGenerate, generating }) {
             <span className="text-2xl">🎓</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-green-800">Certificate Issued!</p>
-              <p className="text-xs text-green-600">Grade {cert.grade} • Score {cert.score}% • {GRADE_LABEL[cert.grade]}</p>
+              <p className="text-xs text-green-600">Grade {cert.grade} • {GRADE_LABEL[cert.grade]}</p>
             </div>
             <span className="text-xs font-bold px-2 py-1 rounded-lg text-white" style={{ background: gradeColor(cert.grade) }}>{cert.grade}</span>
           </div>
@@ -140,7 +178,7 @@ function EnrollmentCard({ enrollment, cert, onGenerate, generating }) {
           </button>
         ) : (
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-            <p className="text-sm text-slate-500">🔒 Complete all {total} tasks to unlock your certificate</p>
+            <p className="text-sm text-slate-500">🔒 Complete all {total} tasks to unlock</p>
           </div>
         )}
       </div>
@@ -150,54 +188,53 @@ function EnrollmentCard({ enrollment, cert, onGenerate, generating }) {
 
 /* ── Certificate Detail Modal ─────────────────────────── */
 function CertModal({ cert, onClose }) {
-  const certRef = useRef(null);
   const [downloading, setDownloading] = useState(false);
 
-  const downloadPDF = async () => {
+  const handleDownload = async () => {
     setDownloading(true);
-    try {
-      const { default: html2canvas } = await import('html2canvas');
-      const { default: jsPDF }       = await import('jspdf');
-      const el = certRef.current;
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: null });
-      const img    = canvas.toDataURL('image/png');
-      const pdf    = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
-      pdf.addImage(img, 'PNG', 0, 0, 297, 210);
-      pdf.save(`RIMP-${cert.certificateNumber}.pdf`);
-      await certificateService.download(cert._id).catch(()=>{});
-      toast.success('Certificate downloaded!');
-    } catch { toast.error('Download failed'); }
-    finally { setDownloading(false); }
+    await downloadCertificate(cert, `cert-${cert._id}`);
+    setDownloading(false);
+  };
+
+  const shareUrl = `${window.location.origin}/verify/${cert.certificateNumber}`;
+  const copyShareLink = () => {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Share link copied to clipboard!');
   };
 
   return (
     <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background:'rgba(0,0,0,0.6)', backdropFilter:'blur(4px)' }}
+      style={{ background:'rgba(0,0,0,0.7)', backdropFilter:'blur(8px)' }}
       onClick={onClose}>
       <motion.div initial={{ scale:0.9, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.9, opacity:0 }}
         className="max-w-4xl w-full" onClick={e=>e.stopPropagation()}>
 
         {/* Controls */}
         <div className="flex items-center justify-between mb-4">
-          <button onClick={onClose} className="text-white/80 hover:text-white text-sm flex items-center gap-1 transition-colors">
-            ← Back to Certificates
-          </button>
-          <button onClick={downloadPDF} disabled={downloading}
-            className="px-5 py-2 rounded-xl font-bold text-sm flex items-center gap-2 disabled:opacity-60 hover:opacity-90 transition text-white"
+          <div className="flex gap-4">
+              <button onClick={onClose} className="text-white/80 hover:text-white text-sm flex items-center gap-1 transition-colors">
+                ← Back
+              </button>
+              <button onClick={copyShareLink} className="text-white/80 hover:text-white text-sm flex items-center gap-1 transition-colors">
+                🔗 Copy Share Link
+              </button>
+          </div>
+          <button onClick={handleDownload} disabled={downloading}
+            className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 disabled:opacity-60 hover:opacity-90 transition text-white shadow-lg"
             style={{ background:'linear-gradient(90deg,#0A3D62,#74B9FF)' }}>
             {downloading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Downloading…</> : '⬇ Download PDF'}
           </button>
         </div>
 
         {/* Scale to fit screen */}
-        <div className="overflow-hidden rounded-xl shadow-2xl" style={{ transform:'scale(0.75)', transformOrigin:'top center', marginBottom:'-150px' }}>
-          <CertTemplate ref={certRef} cert={cert}/>
+        <div className="overflow-hidden rounded-xl shadow-2xl bg-white" style={{ transform:'scale(0.85)', transformOrigin:'top center', marginBottom:'-100px' }}>
+          <CertTemplate cert={cert}/>
         </div>
 
-        <div className="mt-4 text-center text-white/60 text-xs">
-          Certificate No: <span className="font-mono font-bold text-white/80">{cert.certificateNumber}</span>
-          &nbsp;•&nbsp; Verified by RIMP AI Platform
+        <div className="mt-8 text-center text-white/60 text-xs bg-black/20 py-3 rounded-full backdrop-blur-sm max-w-sm mx-auto">
+          Certificate ID: <span className="font-mono font-bold text-white/90">{cert.certificateNumber}</span>
+          &nbsp;•&nbsp; Verified by RIMP AI
         </div>
       </motion.div>
     </motion.div>
@@ -320,30 +357,18 @@ export const CertificatesPage = () => {
                         <p className="text-xs text-slate-400 mb-3 font-mono">{cert.certificateNumber}</p>
                         <div className="flex gap-2">
                           <button onClick={() => setViewCert(cert)}
-                            className="flex-1 py-2 text-sm font-bold text-white rounded-xl hover:opacity-90 transition"
+                            className="flex-1 py-2 text-sm font-bold text-white rounded-xl hover:opacity-90 transition shadow-md"
                             style={{ background:'linear-gradient(90deg,#0A3D62,#1a6ba0)' }}>
-                            View Certificate
+                            View
                           </button>
-                          <button onClick={async () => {
-                              try {
-                                const { default: html2canvas } = await import('html2canvas');
-                                const { default: jsPDF } = await import('jspdf');
-                                setViewCert(cert);
-                                setTimeout(async () => {
-                                  const el = document.getElementById(`cert-${cert._id}`);
-                                  if (!el) return;
-                                  const canvas = await html2canvas(el, { scale:2, useCORS:true });
-                                  const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
-                                  pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,297,210);
-                                  pdf.save(`RIMP-${cert.certificateNumber}.pdf`);
-                                  toast.success('Downloaded!');
-                                  setViewCert(null);
-                                }, 500);
-                              } catch { toast.error('Download failed'); }
-                            }}
-                            className="px-3 py-2 text-sm font-bold border-2 border-primary text-primary rounded-xl hover:bg-primary hover:text-white transition">
+                          <button onClick={() => downloadCertificate(cert, `cert-hidden-${cert._id}`)}
+                            className="px-4 py-2 text-sm font-bold border-2 border-primary text-primary rounded-xl hover:bg-primary hover:text-white transition">
                             ⬇
                           </button>
+                        </div>
+                        {/* Hidden template for list download */}
+                        <div style={{ position:'absolute', left:'-9999px', top:0 }}>
+                            <CertTemplate cert={cert} />
                         </div>
                       </div>
                     </motion.div>

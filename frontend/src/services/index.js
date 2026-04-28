@@ -9,6 +9,8 @@ export const authService = {
   updateProfile: (data) => api.put('/auth/profile', data),
   updatePassword: (data) => api.put('/auth/password', data),
   generateInternship: (data) => api.post('/auth/generate-internship', data),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => api.put(`/auth/reset-password/${token}`, { password }),
   logout: () => api.get('/auth/logout'),
 };
 
@@ -51,6 +53,7 @@ export const quizService = {
   delete: (id) => api.delete(`/quizzes/${id}`),
   submit: (id, data) => api.post(`/quizzes/${id}/submit`, data),
   getResults: (id) => api.get(`/quizzes/${id}/results`),
+  getAvailable: () => api.get('/quizzes/available'),
 };
 
 export const certificateService = {

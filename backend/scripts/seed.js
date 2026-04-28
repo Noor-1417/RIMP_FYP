@@ -348,15 +348,12 @@ const seedDatabase = async () => {
           continue;
         }
 
-        // Hash password
-        const hashedPassword = await bcryptjs.hash(student.password, 10);
-
-        // Create user
+        // Create user - pass plain password, User model pre-save hook will hash it
         const newUser = await User.create({
           firstName: student.firstName,
           lastName: student.lastName,
           email: student.email,
-          password: hashedPassword,
+          password: student.password,
           role: 'intern',
           enrollmentDate: new Date(),
           isActive: true,

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { internshipTaskService, groqTaskService } from '../services';
+import { internshipTaskService, groqTaskService, quizService } from '../services';
 import { Navbar } from '../components/layout/Navbar';
 import MentorChatbot from '../components/MentorChatbot';
 import toast from 'react-hot-toast';
@@ -159,6 +159,7 @@ export default function InternshipTasksPage() {
   useAuth();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);
   const [enrollment, setEnrollment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expandedTask, setExpandedTask] = useState(null);
@@ -174,14 +175,22 @@ export default function InternshipTasksPage() {
   const loadTasks = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await internshipTaskService.getTasksByEnrollment(enrollmentId);
-      if (res.data?.success) {
-        setTasks(res.data.tasks || []);
-        setEnrollment(res.data.enrollment);
+      const [tRes, qRes] = await Promise.all([
+        internshipTaskService.getTasksByEnrollment(enrollmentId),
+        quizService.getAvailable()
+      ]);
+
+      if (tRes.data?.success) {
+        setTasks(tRes.data.tasks || []);
+        setEnrollment(tRes.data.enrollment);
+      }
+      if (qRes.data?.success) {
+        // Filter quizzes for THIS enrollment's category
+        setQuizzes(qRes.data.data.filter(q => q.enrollmentId === enrollmentId) || []);
       }
     } catch (err) {
       console.error(err);
-      toast.error('Failed to load tasks');
+      toast.error('Failed to load content');
     } finally {
       setLoading(false);
     }
@@ -316,11 +325,83 @@ export default function InternshipTasksPage() {
           {activeTab === 'tasks' && (
             <motion.div key="tasks" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               <div className="space-y-4">
-                {tasks.map((task, idx) => {
-                  const config = STATUS_CONFIG[task.status] || STATUS_CONFIG.locked;
-                  const isExpanded = expandedTask === task._id;
-                  const isLocked = task.status === 'locked';
-                  const canSubmit = ['unlocked', 'in-progress', 'rejected'].includes(task.status);
+                {(() => {
+                  // Merge tasks and quizzes
+                  // Logic: After every 2 tasks, insert a quiz for that week
+                  const items = [];
+                  const sortedTasks = [...tasks].sort((a, b) => a.taskOrder - b.taskOrder);
+                  
+                  sortedTasks.forEach((task, idx) => {
+                    items.push({ type: 'task', data: task });
+                    // After task 2, 4, 6... check if a quiz for that week exists
+                    if ((idx + 1) % 2 === 0) {
+                      const week = (idx + 1) / 2;
+                      const quiz = quizzes.find(q => q.week === week);
+                      if (quiz) {
+                        items.push({ type: 'quiz', data: quiz });
+                      }
+                    }
+                  });
+
+                  return items.map((item, idx) => {
+                    if (item.type === 'quiz') {
+                      const quiz = item.data;
+                      return (
+                        <motion.div
+                          key={`quiz-${quiz._id}`}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className={`rounded-xl border p-5 flex items-center justify-between transition-all ${
+                            !quiz.unlocked 
+                              ? 'bg-slate-800/30 border-slate-700/30 opacity-60' 
+                              : 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-blue-500/30 shadow-lg shadow-blue-500/5'
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${quiz.unlocked ? 'bg-blue-600 shadow-lg shadow-blue-600/20' : 'bg-gray-700'}`}>
+                              {quiz.unlocked ? '📝' : '🔒'}
+                            </div>
+                            <div>
+                              <h4 className={`font-bold ${quiz.unlocked ? 'text-blue-100' : 'text-gray-500'}`}>
+                                {quiz.title}
+                              </h4>
+                              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-0.5">
+                                Theory Assessment • Week {quiz.week}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4">
+                             {!quiz.unlocked ? (
+                               <div className="text-right">
+                                  <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
+                                    {quiz.tasksNeeded} Tasks Left
+                                  </span>
+                               </div>
+                             ) : quiz.hasAttempted && quiz.isPassed ? (
+                               <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-lg border border-emerald-400/20">
+                                    Passed: {Math.round(quiz.lastScore)}%
+                                  </span>
+                               </div>
+                             ) : (
+                               <button 
+                                 onClick={() => navigate(`/quiz/${quiz._id}`)}
+                                 className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-600/20"
+                               >
+                                 {quiz.hasAttempted ? 'Retake Quiz' : 'Start Quiz'}
+                               </button>
+                             )}
+                          </div>
+                        </motion.div>
+                      );
+                    }
+
+                    const task = item.data;
+                    const config = STATUS_CONFIG[task.status] || STATUS_CONFIG.locked;
+                    const isExpanded = expandedTask === task._id;
+                    const isLocked = task.status === 'locked';
+                    const canSubmit = ['unlocked', 'in-progress', 'rejected'].includes(task.status);
 
                   return (
                     <motion.div
@@ -497,7 +578,8 @@ export default function InternshipTasksPage() {
                       </AnimatePresence>
                     </motion.div>
                   );
-                })}
+                })})()
+              }
 
                 {tasks.length === 0 && (
                   <div className="text-center py-20">

@@ -28,7 +28,30 @@ function renderTemplate(name, vars = {}) {
 
 async function sendMail({ to, subject, html, text }) {
   const from = process.env.EMAIL_FROM || process.env.EMAIL_USER;
-  return transporter.sendMail({ from, to, subject, html, text });
+  
+  // In development, if credentials are missing, just log to console
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    console.log('-----------------------------------------');
+    console.log('📧 DEVELOPMENT MODE: Email not sent (no credentials)');
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${subject}`);
+    if (text) console.log(`Text: ${text}`);
+    console.log('-----------------------------------------');
+    return { messageId: 'dev-mode-mock-id' };
+  }
+
+  try {
+    return await transporter.sendMail({ from, to, subject, html, text });
+  } catch (err) {
+    console.error('Nodemailer Error:', err.message);
+    // Still log to console so developers can see the link
+    console.log('-----------------------------------------');
+    console.log('📧 EMAIL FAILED: Reset Link below');
+    console.log(`To: ${to}`);
+    if (text) console.log(`Text: ${text}`);
+    console.log('-----------------------------------------');
+    throw err; // Re-throw to be handled by controller
+  }
 }
 
 async function sendCertificateIssuedEmail(to, cert, internName, verificationUrl) {
@@ -47,8 +70,25 @@ async function sendCertificateIssuedEmail(to, cert, internName, verificationUrl)
   }
 }
 
+async function sendPasswordResetEmail(to, name, resetUrl) {
+  try {
+    const html = renderTemplate('passwordReset', { name, resetUrl });
+    await sendMail({
+      to,
+      subject: 'Password Reset Request - RIMP',
+      html,
+      text: `You requested a password reset. Please use this link: ${resetUrl}`,
+    });
+    return true;
+  } catch (err) {
+    console.error('Error sending password reset email:', err);
+    return false;
+  }
+}
+
 module.exports = {
   sendMail,
   renderTemplate,
   sendCertificateIssuedEmail,
+  sendPasswordResetEmail,
 };

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiHome, FiUsers, FiFolder, FiCheckSquare, FiFileText, FiBarChart2, FiSettings, FiLogOut, FiBell } from 'react-icons/fi';
+import { FiHome, FiUsers, FiFolder, FiCheckSquare, FiFileText, FiBarChart2, FiSettings, FiLogOut, FiBell, FiBookOpen } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 
 export const AdminSidebar = ({ isOpen, onClose }) => {
@@ -13,6 +13,7 @@ export const AdminSidebar = ({ isOpen, onClose }) => {
     { label: 'Students', path: '/admin/students', icon: FiUsers },
     { label: 'Applications', path: '/admin/applications', icon: FiFileText },
     { label: 'Categories', path: '/admin/categories', icon: FiFolder },
+    { label: 'Quizzes', path: '/admin/quizzes', icon: FiBookOpen },
     { label: 'Tasks', path: '/admin/tasks', icon: FiCheckSquare },
     { label: 'Submissions', path: '/admin/submissions', icon: FiFileText },
     { label: 'Notifications', path: '/admin/notifications', icon: FiBell },
