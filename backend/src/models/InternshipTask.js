@@ -72,10 +72,13 @@ const internshipTaskSchema = new mongoose.Schema(
       enum: ['locked', 'unlocked', 'in-progress', 'submitted', 'completed', 'approved', 'rejected'],
       default: 'locked',
     },
-    // Inline submission (kept for backward compat with existing frontend)
     submission: {
-      fileUrl: String,
-      fileName: String,
+      fileUrl: String, // Legacy single file
+      fileName: String, // Legacy single file
+      files: [{
+        url: String,
+        name: String
+      }],
       githubLink: String,
       message: String,
       submittedAt: Date,

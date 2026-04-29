@@ -100,7 +100,7 @@ function TasksView({ enrollmentId, onBack }) {
   const [expanded, setExpanded] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [githubLink, setGithubLink] = useState('');
   const [message, setMessage] = useState('');
   const fileRef = useRef(null);
@@ -123,16 +123,33 @@ function TasksView({ enrollmentId, onBack }) {
     finally { setGenerating(false); }
   };
 
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    setFiles(prev => [...prev, ...selectedFiles]);
+    if (fileRef.current) fileRef.current.value = ''; // clear input to allow re-selecting same file
+  };
+
+  const removeFile = (index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (taskId) => {
-    if (!message && !githubLink && !file) { toast.error('Provide a message, file, or GitHub link'); return; }
+    if (!message && !githubLink && files.length === 0) { toast.error('Provide a message, files, or GitHub link'); return; }
     setSubmitting(true);
     try {
       const fd = new FormData();
-      if (file) fd.append('file', file);
+      files.forEach(f => fd.append('files', f));
       if (githubLink) fd.append('githubLink', githubLink);
       if (message) fd.append('message', message);
+      
       const res = await internshipTaskService.submitTask(taskId, fd);
-      if (res.data?.success) { toast.success(res.data.message||'Submitted!'); setFile(null); setGithubLink(''); setMessage(''); if(fileRef.current)fileRef.current.value=''; await load(); }
+      if (res.data?.success) { 
+        toast.success(res.data.message||'Submitted!'); 
+        setFiles([]); 
+        setGithubLink(''); 
+        setMessage(''); 
+        await load(); 
+      }
     } catch (err) { toast.error(err.response?.data?.message||'Submission failed'); }
     finally { setSubmitting(false); }
   };
@@ -249,12 +266,28 @@ function TasksView({ enrollmentId, onBack }) {
                               {canSubmit && (
                                 <div className="bg-light rounded-xl p-4 space-y-3">
                                   <h5 className="text-sm font-bold text-primary">{task.status==='rejected'?'🔄 Resubmit':'📤 Submit Your Work'}</h5>
-                                  <input type="file" accept=".pdf,.zip" ref={fileRef} onChange={e=>setFile(e.target.files[0])}
-                                    className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary file:text-white file:text-sm hover:file:opacity-90 file:cursor-pointer bg-white rounded-lg border border-gray-200 p-1"/>
+                                  
+                                  <div className="space-y-2">
+                                    <input type="file" multiple accept=".pdf,.zip,.doc,.docx" ref={fileRef} onChange={handleFileChange}
+                                      className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary file:text-white file:text-sm hover:file:opacity-90 file:cursor-pointer bg-white rounded-lg border border-gray-200 p-1"/>
+                                    
+                                    {files.length > 0 && (
+                                      <div className="flex flex-wrap gap-2 pt-1">
+                                        {files.map((f, i) => (
+                                          <div key={i} className="flex items-center gap-2 bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-100">
+                                            <span className="truncate max-w-[150px]">{f.name}</span>
+                                            <button onClick={() => removeFile(i)} className="text-red-500 hover:text-red-700 font-bold">×</button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
                                   <input type="url" placeholder="https://github.com/username/repo" value={githubLink} onChange={e=>setGithubLink(e.target.value)}
                                     className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-primary"/>
                                   <textarea rows={3} placeholder="Describe your approach and any notes…" value={message} onChange={e=>setMessage(e.target.value)}
                                     className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-primary resize-none"/>
+                                  
                                   <button onClick={()=>handleSubmit(task._id)} disabled={submitting}
                                     className="w-full py-2.5 bg-primary text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
                                     {submitting?<><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Evaluating with AI…</>:'🚀 Submit for AI Review'}

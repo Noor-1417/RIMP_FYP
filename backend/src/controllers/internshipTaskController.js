@@ -44,7 +44,7 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 }, // 25MB limit
 });
 
-exports.uploadMiddleware = upload.single('file');
+exports.uploadMiddleware = upload.array('files', 5);
 
 // ============================================================
 // GENERATE TASKS — Called after enrollment confirmation
@@ -267,17 +267,23 @@ exports.submitTask = async (req, res) => {
     }
 
     // Check: must provide at least a message or file or github link
-    if (!message && !githubLink && !req.file) {
+    if (!message && !githubLink && (!req.files || req.files.length === 0)) {
       return res.status(400).json({
         success: false,
         message: 'Please provide at least a message, file upload, or GitHub link.',
       });
     }
 
+    const uploadedFiles = (req.files || []).map(f => ({
+      url: `/uploads/${f.filename}`,
+      name: f.originalname
+    }));
+
     // Save submission data
     task.submission = {
-      fileUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
-      fileName: req.file ? req.file.originalname : undefined,
+      files: uploadedFiles,
+      fileUrl: uploadedFiles.length > 0 ? uploadedFiles[0].url : undefined,
+      fileName: uploadedFiles.length > 0 ? uploadedFiles[0].name : undefined,
       githubLink: githubLink || undefined,
       message: message || undefined,
       submittedAt: new Date(),

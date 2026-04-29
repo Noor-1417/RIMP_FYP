@@ -110,21 +110,22 @@ Respond ONLY with a JSON array.`;
  * @returns {Promise<Object>} { score, plagiarism_percent, status, feedback, improvements }
  */
 async function evaluateTaskSubmission({ taskTitle, taskDescription, taskRequirements, submissionMessage, githubLink }) {
-  const systemPrompt = `You are a strict but fair internship evaluator. Analyze the student's submission and respond ONLY with valid JSON (no markdown, no code blocks):
+  const systemPrompt = `You are a supportive and professional internship mentor. Your goal is to evaluate student work fairly. 
+Analyze the student's submission and respond ONLY with valid JSON (no markdown, no code blocks):
 {
   "score": <number 0-100>,
   "plagiarism_percent": <number 0-100>,
   "status": "PASS" or "FAIL",
-  "feedback": "<constructive feedback text>",
+  "feedback": "<constructive and encouraging feedback text>",
   "improvements": ["improvement1", "improvement2", "improvement3"]
 }
 
-Rules:
-- Score >= 60 means PASS, below 60 means FAIL
-- Check if the submission actually addresses the task requirements
-- Estimate plagiarism based on generic/boilerplate content
-- Provide actionable improvements
-- Be encouraging but honest`;
+Evaluation Rules:
+- If the student has made a genuine effort and addressed the core requirements, GIVE THEM A PASS (Score >= 60).
+- Only FAIL if the submission is completely irrelevant, empty, or has high plagiarism (>50%).
+- If multiple files or a GitHub link are provided, assume the work is distributed across them.
+- Provide actionable and positive improvements.
+- Be encouraging in your feedback.`;
 
   const userPrompt = `Evaluate this internship task submission:
 
