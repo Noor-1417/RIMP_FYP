@@ -57,18 +57,7 @@ const ProtectedRoute = ({ user, allowedRoles, children }) => {
 };
 
 function App() {
-  const { user, isInitialized, isAuthenticated } = useAuth();
-
-  if (!isInitialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-light">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const { user, isAuthenticated } = useAuth();
 
   return (
     <Router>
@@ -308,14 +297,15 @@ function App() {
           }
         />
 
-        {/* Root: dashboard if logged in, else landing */}
         <Route
           path="/"
-          element={isAuthenticated ? (
-            user?.role === 'admin'
-              ? <Navigate to="/admin" replace />
-              : <Navigate to="/dashboard" replace />
-          ) : <LandingPage />}
+          element={
+            isAuthenticated ? (
+              user?.role === 'admin' ? <AdminDashboard /> : <InternDashboard />
+            ) : (
+              <LandingPage />
+            )
+          }
         />
 
         
