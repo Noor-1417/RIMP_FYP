@@ -3,96 +3,63 @@ import { useAuthStore } from '../context/store';
 import { authService } from '../services';
 
 export const useAuth = () => {
-  const { user, token, isAuthenticated, isLoading, logout, setUser, setLoading, setError } = useAuthStore();
-  const [isInitialized, setIsInitialized] = useState(false);
+  const user = useAuthStore(state => state.user);
+  const token = useAuthStore(state => state.token);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isLoading = useAuthStore(state => state.isLoading);
+  const isInitialized = useAuthStore(state => state.isInitialized);
+  const setUser = useAuthStore(state => state.setUser);
+  const setLoading = useAuthStore(state => state.setLoading);
+  const setError = useAuthStore(state => state.setError);
+  const logout = useAuthStore(state => state.logout);
+  const loadFromStorage = useAuthStore(state => state.loadFromStorage);
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        // Prefer sessionStorage so data clears on tab close; fall back to localStorage
-        const storedToken = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
+    if (!isInitialized) {
+      loadFromStorage();
+    }
+  }, [isInitialized, loadFromStorage]);
 
-        if (storedToken && storedUser) {
-          setUser(JSON.parse(storedUser), storedToken);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setIsInitialized(true);
-      }
-    };
-
-    initAuth();
-  }, [setUser]);
-
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       setLoading(true);
       const response = await authService.login({ email, password });
       const { user, token, redirectTo } = response.data;
 
-      if (!user || !token) {
-        throw new Error('Invalid response: missing user or token');
-      }
+      if (!user || !token) throw new Error('Invalid response');
 
-      // Persist auth in sessionStorage (cleared on browser/tab close)
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('user', JSON.stringify(user));
-
-      // keep localStorage for backward compatibility (optional)
-      try { localStorage.setItem('token', token); localStorage.setItem('user', JSON.stringify(user)); } catch (e) {}
-
       setUser(user, token);
       return { success: true, user, redirectTo };
     } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Login failed';
-      setError(message);
-      console.error('Login error details:', error);
-      return { success: false, message };
+      setError(error.message);
+      return { success: false, message: error.message };
     } finally {
       setLoading(false);
     }
-  };
+  }, [setUser, setLoading, setError]);
 
-  const register = async (data) => {
+  const register = useCallback(async (data) => {
     try {
       setLoading(true);
       const response = await authService.register(data);
       const { user, token, redirectTo } = response.data;
+      if (!user || !token) throw new Error('Invalid response');
 
-      if (!user || !token) {
-        throw new Error('Invalid response: missing user or token');
-      }
-
-      // Persist auth in sessionStorage (cleared on browser/tab close)
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('user', JSON.stringify(user));
-
-      // keep localStorage for backward compatibility (optional)
-      try { localStorage.setItem('token', token); localStorage.setItem('user', JSON.stringify(user)); } catch (e) {}
-
       setUser(user, token);
       return { success: true, user, redirectTo };
     } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Registration failed';
-      setError(message);
-      console.error('Register error details:', error);
-      return { success: false, message };
+      setError(error.message);
+      return { success: false, message: error.message };
     } finally {
       setLoading(false);
     }
-  };
+  }, [setUser, setLoading, setError]);
 
-  const logoutUser = () => {
-    // Clear both sessionStorage and localStorage to be safe
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch (e) {}
-    logout();
-  };
-
-  return useMemo(() => ({
+  return {
     user,
     token,
     isAuthenticated,
@@ -100,8 +67,8 @@ export const useAuth = () => {
     isLoading,
     login,
     register,
-    logout: logoutUser,
-  }), [user, token, isAuthenticated, isInitialized, isLoading, login, logoutUser, register]);
+    logout,
+  };
 };
 
 export const useLocalStorage = (key, initialValue) => {
