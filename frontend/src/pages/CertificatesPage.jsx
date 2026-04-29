@@ -168,14 +168,24 @@ function EnrollmentCard({ enrollment, cert, onGenerate, generating }) {
             <span className="text-xs font-bold px-2 py-1 rounded-lg text-white" style={{ background: gradeColor(cert.grade) }}>{cert.grade}</span>
           </div>
         ) : allDone ? (
-          <button onClick={() => onGenerate(enrollment._id)}
-            disabled={generating}
-            className="w-full py-3 font-bold rounded-xl text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 transition-all shadow-sm"
-            style={{ background: 'linear-gradient(90deg,#0A3D62,#1a6ba0)' }}>
-            {generating
-              ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Generating…</>
-              : '🎓 Generate My Certificate'}
-          </button>
+          enrollment.isFinalQuizPassed ? (
+            <button onClick={() => onGenerate(enrollment._id)}
+              disabled={generating}
+              className="w-full py-3 font-bold rounded-xl text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 transition-all shadow-sm"
+              style={{ background: 'linear-gradient(90deg,#0A3D62,#1a6ba0)' }}>
+              {generating
+                ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Generating…</>
+                : '🎓 Generate My Certificate'}
+            </button>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+              <p className="text-sm font-bold text-amber-800">📝 Final Quiz Required</p>
+              <p className="text-xs text-amber-600 mt-1">Please complete the conceptual quiz assigned by the admin to unlock your certificate.</p>
+              <Link to="/dashboard" className="mt-3 inline-block text-xs font-bold bg-amber-600 text-white px-4 py-1.5 rounded-lg hover:bg-amber-700 transition">
+                Go to Dashboard
+              </Link>
+            </div>
+          )
         ) : (
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
             <p className="text-sm text-slate-500">🔒 Complete all {total} tasks to unlock</p>

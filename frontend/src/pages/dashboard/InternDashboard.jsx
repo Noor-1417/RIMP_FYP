@@ -267,6 +267,21 @@ export const InternDashboard = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-primary group-hover:text-secondary transition-colors truncate">{en.category?.name}</p>
+                        
+                        {p2 === 100 && !en.isFinalQuizPassed && (
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"/>
+                            <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Pending Final Quiz</p>
+                          </div>
+                        )}
+                        
+                        {p2 === 100 && en.isFinalQuizPassed && (
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500"/>
+                            <p className="text-[10px] text-green-600 font-bold uppercase tracking-wider">Quiz Passed • Certificate Unlocked</p>
+                          </div>
+                        )}
+
                         <div className="flex items-center gap-2 mt-1.5">
                           <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                             <div className="h-full rounded-full transition-all duration-700"

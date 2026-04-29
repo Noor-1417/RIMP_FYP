@@ -323,6 +323,15 @@ exports.generateForEnrollment = async (req, res) => {
       });
     }
 
+    // Check if Final Quiz is passed
+    if (!enrollment.isFinalQuizPassed) {
+      return res.status(400).json({
+        success: false,
+        message: 'Final Conceptual Quiz not passed yet. Please complete the quiz assigned by the admin to unlock your certificate.',
+        requiresQuiz: true
+      });
+    }
+
     // Calculate score & grade
     const scores = tasks.map(t => t.evaluation?.score || 0).filter(s => s > 0);
     const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 80;

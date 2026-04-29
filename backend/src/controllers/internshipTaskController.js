@@ -352,6 +352,21 @@ exports.submitTask = async (req, res) => {
           } catch (notifErr) {
             console.error('Notification error:', notifErr);
           }
+        } else {
+          // All tasks completed! Notify Admin to assign quiz
+          try {
+            const studentObj = await require('../models/User').findById(userId).select('firstName lastName');
+            const categoryObj = await require('../models/InternshipCategory').findById(task.category).select('name');
+            
+            await createNotificationForAdmins(
+              'Tasks Completed - Assignment Needed',
+              `${studentObj?.firstName || 'A student'} has completed all tasks for ${categoryObj?.name || 'their internship'}. Please assign a conceptual quiz to unlock their certificate.`,
+              'tasks-completed',
+              { resourceType: 'enrollment', resourceId: task.enrollment, studentId: userId }
+            );
+          } catch (notifErr) {
+            console.error('Admin notification error:', notifErr);
+          }
         }
       } else {
         task.status = 'rejected';
@@ -585,6 +600,7 @@ exports.getMyEnrollments = async (req, res) => {
           startDate: enrollment.startDate,
           endDate: enrollment.endDate,
           enrolledAt: enrollment.enrolledAt,
+          isFinalQuizPassed: enrollment.isFinalQuizPassed || false,
           taskProgress: {
             total,
             approved,

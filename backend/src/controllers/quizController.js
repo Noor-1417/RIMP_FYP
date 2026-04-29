@@ -258,6 +258,15 @@ exports.submitQuiz = async (req, res, next) => {
     quiz.attempts.push(attempt);
     await quiz.save();
 
+    // If passed, update Enrollment status
+    if (isPassed) {
+      const Enrollment = require('../models/Enrollment');
+      await Enrollment.findOneAndUpdate(
+        { intern: req.user.id, category: quiz.category },
+        { isFinalQuizPassed: true }
+      );
+    }
+
     res.status(200).json({
       success: true,
       message: 'Quiz submitted successfully',
