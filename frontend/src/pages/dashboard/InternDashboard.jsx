@@ -143,10 +143,10 @@ export const InternDashboard = () => {
               <p className="text-blue-200 mt-1 text-sm">Intern Portal &nbsp;•&nbsp; AI-Powered Internship Program</p>
 
               {s.totalTasks > 0 && (
-                <div className="mt-4 max-w-xs">
-                  <div className="flex justify-between text-xs text-blue-200 mb-1">
-                    <span>Overall completion</span>
-                    <span className="font-bold text-white">{pct}%</span>
+                <div className="mt-6 max-w-xs">
+                  <div className="flex justify-between items-end mb-2">
+                    <span className="text-blue-200 text-xs font-bold uppercase tracking-wider">Overall Progress</span>
+                    <span className="text-white text-lg font-black">{pct}%</span>
                   </div>
                   <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden">
                     <motion.div
