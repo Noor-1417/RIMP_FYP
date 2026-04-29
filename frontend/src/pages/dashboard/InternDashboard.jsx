@@ -182,9 +182,72 @@ export const InternDashboard = () => {
           <StatCard icon="⭐" label="AI Avg Score"  value={`${s.averageScore}%`} accent="bg-purple-50" delay={0.3}  />
         </div>
 
-        <div className="bg-white p-12 rounded-2xl border border-slate-100 shadow-sm text-center mb-6">
-          <h2 className="text-2xl font-bold text-primary mb-2">Welcome to your Dashboard</h2>
-          <p className="text-slate-500">Your internships and tasks will appear here.</p>
+        {/* ══ CHARTS ROW ════════════════════════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <motion.div {...fade(0.35)} className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <h3 className="text-lg font-bold text-primary mb-4">📈 Weekly Task Progress</h3>
+            {s.weeklyProgress?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={s.weeklyProgress} margin={{ top:4, right:4, bottom:0, left:-10 }}>
+                  <defs>
+                    <linearGradient id="gComp" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#0A3D62" stopOpacity={0.18}/>
+                      <stop offset="95%" stopColor="#0A3D62" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="gPend" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#74B9FF" stopOpacity={0.18}/>
+                      <stop offset="95%" stopColor="#74B9FF" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+                  <XAxis dataKey="week" tick={{ fill:'#94a3b8', fontSize:12 }}/>
+                  <YAxis tick={{ fill:'#94a3b8', fontSize:12 }}/>
+                  <Tooltip contentStyle={TIP}/>
+                  <Legend wrapperStyle={{ color:'#64748b', fontSize:12 }}/>
+                  <Area type="monotone" dataKey="completed" name="Completed" stroke="#0A3D62" strokeWidth={2.5} fill="url(#gComp)" dot={{ fill:'#0A3D62', r:4 }}/>
+                  <Area type="monotone" dataKey="pending"   name="Pending"   stroke="#74B9FF" strokeWidth={2.5} fill="url(#gPend)" dot={{ fill:'#74B9FF', r:4 }}/>
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[240px] flex flex-col items-center justify-center text-slate-300">
+                <span className="text-5xl mb-3">📊</span>
+                <p className="font-semibold text-slate-400">No data yet</p>
+                <p className="text-sm text-slate-300 mt-1">Complete tasks to see progress charts</p>
+              </div>
+            )}
+          </motion.div>
+
+          <motion.div {...fade(0.4)} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <h3 className="text-lg font-bold text-primary mb-4">🎯 Distribution</h3>
+            {pieData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={170}>
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={42} outerRadius={72} paddingAngle={3} dataKey="value">
+                      {pieData.map((e, i) => <Cell key={i} fill={e.color}/>)}
+                    </Pie>
+                    <Tooltip contentStyle={TIP}/>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2 mt-3">
+                  {pieData.map(d => (
+                    <div key={d.name} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background:d.color }}/>
+                        <span className="text-slate-600">{d.name}</span>
+                      </div>
+                      <span className="font-bold text-primary">{d.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="h-[200px] flex flex-col items-center justify-center text-slate-300">
+                <span className="text-5xl mb-3">🎯</span>
+                <p className="text-sm text-slate-400 text-center">Go to My Tasks to get started!</p>
+              </div>
+            )}
+          </motion.div>
         </div>
 
           {/* Active internships */}
@@ -340,8 +403,11 @@ export const InternDashboard = () => {
                   <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
                     Enroll in a course and complete tasks to start receiving conceptual assessments.
                   </p>
-            )}
-          </motion.div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ══ QUICK ACTIONS ══════════════════════════════════ */}
         <motion.div {...fade(0.55)} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
