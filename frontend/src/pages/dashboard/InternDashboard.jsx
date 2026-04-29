@@ -107,18 +107,7 @@ export const InternDashboard = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  /* ── loading ── */
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-light">
-        <Navbar />
-        <div className="flex flex-col items-center justify-center h-[80vh] gap-4">
-          <div className="w-14 h-14 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-          <p className="text-slate-400 font-medium">Loading your dashboard…</p>
-        </div>
-      </div>
-    );
-  }
+
 
   const s = progress || {
     totalTasks:0, approvedTasks:0, pendingTasks:0,
