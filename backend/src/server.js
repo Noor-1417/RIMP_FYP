@@ -31,10 +31,12 @@ app.get('/api/seed-admin', async (req, res) => {
     }
     
     const admin = new User({
-      name: 'Admin',
+      firstName: 'System',
+      lastName: 'Admin',
       email: process.env.ADMIN_EMAIL || 'admin@rimp.com',
       password: process.env.ADMIN_PASSWORD || 'Admin@123456',
-      role: 'admin'
+      role: 'admin',
+      isVerified: true
     });
     
     await admin.save();
