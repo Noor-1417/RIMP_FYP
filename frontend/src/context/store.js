@@ -1,11 +1,8 @@
 import { create } from 'zustand';
 
-export const useAuthStore = create((set) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
+  isInitialized: false,
+  
+  setInitialized: (val) => set({ isInitialized: val }),
 
   setUser: (user, token) =>
     set({
@@ -14,19 +11,22 @@ export const useAuthStore = create((set) => ({
       isAuthenticated: !!token,
     }),
 
-  logout: () =>
+  logout: () => {
+    sessionStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     set({
       user: null,
       token: null,
       isAuthenticated: false,
-    }),
+    });
+  },
 
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
   clearError: () => set({ error: null }),
 
   loadFromStorage: () => {
-    // Prefer sessionStorage (cleared when tab/browser is closed), fall back to localStorage
     const storedToken = sessionStorage.getItem('token') || localStorage.getItem('token');
     const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
 
@@ -37,6 +37,7 @@ export const useAuthStore = create((set) => ({
         isAuthenticated: true,
       });
     }
+    set({ isInitialized: true });
   },
 }));
 
