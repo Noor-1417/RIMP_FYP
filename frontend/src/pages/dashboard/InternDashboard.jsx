@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Legend, Area, AreaChart,
+  PieChart, Pie, Cell, Legend, Area, AreaChart,
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { FiClock } from 'react-icons/fi';
@@ -10,7 +10,7 @@ import { Navbar } from '../../components/layout/Navbar';
 import { useAuth } from '../../hooks/useAuth';
 import { internshipTaskService, quizService } from '../../services';
 import api from '../../utils/api';
-import toast from 'react-hot-toast';
+
 
 /* ── helpers ─────────────────────────────────────────── */
 const TIP = {
@@ -69,12 +69,10 @@ export const InternDashboard = () => {
   const hasLoaded = useRef(false);
 
   const load = useCallback(async () => {
-    // Persistent guard: don't reload if we already have data in this session
     if (!user?._id || hasLoaded.current) return;
     
-    // Check if we fetched very recently (within 5 seconds) to prevent fast loops
     const lastFetch = sessionStorage.getItem(`last_fetch_${user._id}`);
-    if (lastFetch && Date.now() - parseInt(lastFetch) < 5000) return;
+    if (lastFetch && Date.now() - parseInt(lastFetch) < 10000) return; // 10s guard
 
     hasLoaded.current = true;
     sessionStorage.setItem(`last_fetch_${user._id}`, Date.now().toString());
@@ -85,26 +83,20 @@ export const InternDashboard = () => {
         internshipTaskService.getMyEnrollments().catch(() => null),
       ]);
 
-      if (pRes?.data?.success) setProgress(pRes.data.data);
-      if (eRes?.data?.success) setEnrollments(eRes.data.enrollments || []);
+      if (pRes?.data?.success && pRes.data.data) setProgress(pRes.data.data);
+      if (eRes?.data?.success && eRes.data.enrollments) setEnrollments(eRes.data.enrollments);
       
-      quizService.getAvailable()
-        .then(res => {
-          if (res.data?.success) {
-            setQuizzes(res.data.data || []);
-            setQuizData(res.data);
-          }
-        })
-        .catch(() => {});
+      const qRes = await quizService.getAvailable().catch(() => null);
+      if (qRes?.data?.success) {
+        setQuizzes(qRes.data.data || []);
+        setQuizData(qRes.data);
+      }
 
-      api.get(`/applications/user/${user._id}`)
-        .then(res => {
-          if (res.data?.data) setApplication(res.data.data);
-        })
-        .catch(() => {});
+      const aRes = await api.get(`/applications/user/${user._id}`).catch(() => null);
+      if (aRes?.data?.data) setApplication(aRes.data.data);
       
     } catch (err) {
-      console.warn('Dashboard load handled');
+      console.warn('Silent load fail');
     }
   }, [user?._id]);
 

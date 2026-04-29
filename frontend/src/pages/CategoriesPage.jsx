@@ -223,7 +223,7 @@ export const CategoriesPage = () => {
       console.error('Category load error:', err);
       const msg = err?.response?.data?.message || '';
       if (err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error')) {
-        setError('Cannot connect to backend server. Make sure the backend is running on port 5000.');
+        setError('Cannot connect to backend server. Make sure the backend is running on port 5001.');
       } else if (msg.includes('Database not connected')) {
         setError('Database not connected. Make sure MongoDB is running.');
       } else {
