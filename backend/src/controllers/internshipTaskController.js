@@ -460,6 +460,7 @@ exports.getWeeklyProgress = async (req, res) => {
     const allTasks = await InternshipTask.find({ student: userId }).sort({ taskOrder: 1 });
 
     if (!allTasks || allTasks.length === 0) {
+
       return res.status(200).json({
         success: true,
         data: {

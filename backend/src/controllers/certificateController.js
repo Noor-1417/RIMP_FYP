@@ -333,9 +333,14 @@ exports.generateForEnrollment = async (req, res) => {
 
     const internUser = await User.findById(userId).select('firstName lastName email');
 
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    const certificateNumber = `RIMP-${timestamp}-${random}`;
+
     const certificate = await Certificate.create({
       intern:               userId,
       category:             enrollment.category._id,
+      certificateNumber,
       grade,
       score:                avgScore,
       completionPercentage: 100,
