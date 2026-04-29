@@ -21,10 +21,10 @@ export const Navbar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   React.useEffect(() => {
-    if (user) {
+    if (user?._id) {
       fetchNotifications();
     }
-  }, [user]);
+  }, [user?._id]);
 
   const fetchNotifications = async () => {
     try {

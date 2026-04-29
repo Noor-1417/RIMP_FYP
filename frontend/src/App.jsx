@@ -80,7 +80,6 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/verify/:certificateNumber" element={<VerifyPage />} />
-        <Route path="/verify/:certificateNumber" element={<VerifyPage />} />
 
         {/* Protected Routes */}
 

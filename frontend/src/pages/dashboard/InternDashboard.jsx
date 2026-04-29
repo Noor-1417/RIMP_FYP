@@ -93,7 +93,7 @@ export const InternDashboard = () => {
       } catch (_) {}
     } catch { toast.error('Failed to load dashboard'); }
     finally  { setLoading(false); }
-  }, [user]);
+  }, [user?._id]);
 
   useEffect(() => { load(); }, [load]);
 
