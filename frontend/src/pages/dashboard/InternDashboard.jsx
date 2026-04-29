@@ -71,16 +71,23 @@ export const InternDashboard = () => {
 
   const load = useCallback(async () => {
     if (!user || hasLoaded.current) return;
+    
+    // Mark as loaded immediately to prevent concurrent loops
+    hasLoaded.current = true;
+    
     try {
       setLoading(true);
+      
+      // Load progress and enrollments
       const [pRes, eRes] = await Promise.all([
-        internshipTaskService.getWeeklyProgress(),
-        internshipTaskService.getMyEnrollments(),
+        internshipTaskService.getWeeklyProgress().catch(() => ({ data: { success: true, data: null } })),
+        internshipTaskService.getMyEnrollments().catch(() => ({ data: { success: true, enrollments: [] } })),
       ]);
+
       if (pRes.data?.success) setProgress(pRes.data.data);
       if (eRes.data?.success) setEnrollments(eRes.data.enrollments || []);
       
-      // Fetch available quizzes
+      // Fetch available quizzes (Optional)
       try {
         const qRes = await quizService.getAvailable();
         if (qRes.data?.success) {
@@ -89,14 +96,18 @@ export const InternDashboard = () => {
         }
       } catch (_) {}
 
+      // Fetch user application (Optional)
       try {
         const aRes = await api.get(`/applications/user/${user._id}`);
         if (aRes.data?.data) setApplication(aRes.data.data);
       } catch (_) {}
       
-      hasLoaded.current = true;
-    } catch { toast.error('Failed to load dashboard'); }
-    finally  { setLoading(false); }
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+      // Don't show toast for every little thing to avoid annoying loops
+    } finally {
+      setLoading(false);
+    }
   }, [user?._id]);
 
   useEffect(() => { load(); }, [load]);
