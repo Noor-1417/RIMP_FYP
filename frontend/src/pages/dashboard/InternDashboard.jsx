@@ -66,6 +66,7 @@ export const InternDashboard = () => {
   const [quizzes,      setQuizzes]      = useState([]);
   const [quizData,     setQuizData]     = useState(null);
   const [application,  setApplication]  = useState(null);
+  const [loading,      setLoading]      = useState(true);
   const hasLoaded = useRef(false);
 
   const load = useCallback(async () => {
