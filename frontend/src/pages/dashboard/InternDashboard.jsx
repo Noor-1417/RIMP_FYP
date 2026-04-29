@@ -343,8 +343,7 @@ export const InternDashboard = () => {
                 </div>
               )}
             </motion.div>
-          )}
-        </AnimatePresence>
+
 
         {/* ══ QUICK ACTIONS ══════════════════════════════════ */}
         <motion.div {...fade(0.55)} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
