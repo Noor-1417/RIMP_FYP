@@ -38,23 +38,7 @@ import { QuizTakePage } from './pages/QuizTakePage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 
-// Protected Route Component
-const ProtectedRoute = ({ user, allowedRoles, children }) => {
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
 
-    if (allowedRoles) {
-    const userRole = (user.role || '').toString().toLowerCase();
-    const allowed = allowedRoles.map((r) => r.toString().toLowerCase());
-    if (!allowed.includes(userRole)) {
-      // If the user is authenticated but not allowed, send them to the home page
-      return <Navigate to="/" replace />;
-    }
-  }
-
-  return children;
-};
 
 function App() {
   const { user, isAuthenticated } = useAuth();
@@ -72,230 +56,31 @@ function App() {
 
         {/* Protected Routes */}
 
-        <Route
-          path="/admin/categories"
-          element={
-            <ProtectedRoute user={user} allowedRoles={[ 'admin' ]}>
-              <AdminCategoriesPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/tasks"
-          element={
-            <ProtectedRoute user={user} allowedRoles={[ 'admin' ]}>
-              <AdminTasksPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/analytics"
-          element={
-            <ProtectedRoute user={user} allowedRoles={[ 'admin' ]}>
-              <AdminAnalyticsPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/settings"
-          element={
-            <ProtectedRoute user={user} allowedRoles={[ 'admin' ]}>
-              <AdminSettingsPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/notifications"
-          element={
-            <ProtectedRoute user={user} allowedRoles={[ 'admin' ]}>
-              <AdminNotificationsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/applications"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['admin']}>
-              <AdminApplicationsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/quizzes"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['admin']}>
-              <AdminQuizzesPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/quiz/:id"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['intern']}>
-              <QuizTakePage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['intern', 'manager']}>
-              <InternDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/intern-dashboard"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['intern', 'manager']}>
-              <InternDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin-dashboard"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/students"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['admin']}>
-              <AdminStudentsPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/submissions"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['admin']}>
-              <AdminSubmissionsPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/categories"
-          element={
-            <ProtectedRoute user={user}>
-              <CategoriesPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/tasks"
-          element={
-            <ProtectedRoute user={user}>
-              <TasksPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/certificates"
-          element={
-            <ProtectedRoute user={user}>
-              <CertificatesPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute user={user}>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Student CV Builder (students only) */}
-        <Route
-          path="/cv-builder"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['intern']}>
-              <CVBuilderPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/student-dashboard"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['intern']}>
-              <StudentDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/payment/:categoryId"
-          element={
-            <ProtectedRoute user={user}>
-              <PaymentPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/payment-success"
-          element={
-            <ProtectedRoute user={user}>
-              <PaymentSuccessPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/payment-cancel"
-          element={
-            <ProtectedRoute user={user}>
-              <PaymentCancelPage />
-            </ProtectedRoute>
-          }
-        />
-
-
-        <Route
-          path="/my-tasks/:enrollmentId"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['intern']}>
-              <InternshipTasksPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/student-progress"
-          element={
-            <ProtectedRoute user={user} allowedRoles={['intern']}>
-              <StudentProgressDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+        <Route path="/admin/tasks" element={<AdminTasksPage />} />
+        <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
+        <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
+        <Route path="/admin/applications" element={<AdminApplicationsPage />} />
+        <Route path="/admin/quizzes" element={<AdminQuizzesPage />} />
+        <Route path="/quiz/:id" element={<QuizTakePage />} />
+        <Route path="/dashboard" element={<InternDashboard />} />
+        <Route path="/intern-dashboard" element={<InternDashboard />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/students" element={<AdminStudentsPage />} />
+        <Route path="/admin/submissions" element={<AdminSubmissionsPage />} />
+        <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="/tasks" element={<TasksPage />} />
+        <Route path="/certificates" element={<CertificatesPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/cv-builder" element={<CVBuilderPage />} />
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/payment/:categoryId" element={<PaymentPage />} />
+        <Route path="/payment-success" element={<PaymentSuccessPage />} />
+        <Route path="/payment-cancel" element={<PaymentCancelPage />} />
+        <Route path="/my-tasks/:enrollmentId" element={<InternshipTasksPage />} />
+        <Route path="/student-progress" element={<StudentProgressDashboard />} />
 
         <Route
           path="/"
