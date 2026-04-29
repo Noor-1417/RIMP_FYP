@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -66,11 +66,12 @@ export const InternDashboard = () => {
   const [quizzes,      setQuizzes]      = useState([]);
   const [quizData,     setQuizData]     = useState(null);
   const [application,  setApplication]  = useState(null);
-  const [loading,      setLoading]      = useState(true);
+  const hasLoaded = useRef(false);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user || hasLoaded.current) return;
     try {
+      setLoading(true);
       const [pRes, eRes] = await Promise.all([
         internshipTaskService.getWeeklyProgress(),
         internshipTaskService.getMyEnrollments(),
@@ -91,6 +92,8 @@ export const InternDashboard = () => {
         const aRes = await api.get(`/applications/user/${user._id}`);
         if (aRes.data?.data) setApplication(aRes.data.data);
       } catch (_) {}
+      
+      hasLoaded.current = true;
     } catch { toast.error('Failed to load dashboard'); }
     finally  { setLoading(false); }
   }, [user?._id]);

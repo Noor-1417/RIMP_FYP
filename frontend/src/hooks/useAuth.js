@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '../context/store';
 import { authService } from '../services';
 
@@ -92,7 +92,7 @@ export const useAuth = () => {
     logout();
   };
 
-  return {
+  return useMemo(() => ({
     user,
     token,
     isAuthenticated,
@@ -101,7 +101,7 @@ export const useAuth = () => {
     login,
     register,
     logout: logoutUser,
-  };
+  }), [user, token, isAuthenticated, isInitialized, isLoading]);
 };
 
 export const useLocalStorage = (key, initialValue) => {
