@@ -34,7 +34,7 @@ api.interceptors.response.use(
       sessionStorage.removeItem('user');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      // DO NOT use window.location.href here as it causes blinking loops
     }
     return Promise.reject(error);
   }
