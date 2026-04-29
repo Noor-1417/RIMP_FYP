@@ -299,7 +299,7 @@ export const InternDashboard = () => {
               </div>
             )}
           </motion.div>
-        </div>
+
         
         {/* ══ ADMIN QUIZZES (Theory based) ══════════════════ */}
         <AnimatePresence>
