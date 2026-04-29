@@ -101,7 +101,7 @@ export const useAuth = () => {
     login,
     register,
     logout: logoutUser,
-  }), [user, token, isAuthenticated, isInitialized, isLoading]);
+  }), [user, token, isAuthenticated, isInitialized, isLoading, login, logoutUser, register]);
 };
 
 export const useLocalStorage = (key, initialValue) => {
