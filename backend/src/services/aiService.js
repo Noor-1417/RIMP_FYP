@@ -109,7 +109,7 @@ Respond ONLY with a JSON array.`;
  * @param {Object} params - { taskTitle, taskDescription, taskRequirements, submissionMessage, githubLink }
  * @returns {Promise<Object>} { score, plagiarism_percent, status, feedback, improvements }
  */
-async function evaluateTaskSubmission({ taskTitle, taskDescription, taskRequirements, submissionMessage, githubLink }) {
+async function evaluateTaskSubmission({ taskTitle, taskDescription, taskRequirements, submissionMessage, githubLink, hasFiles, fileNames }) {
   const systemPrompt = `You are a supportive and professional internship mentor. Your goal is to evaluate student work fairly. 
 Analyze the student's submission and respond ONLY with valid JSON (no markdown, no code blocks):
 {
@@ -122,10 +122,10 @@ Analyze the student's submission and respond ONLY with valid JSON (no markdown, 
 
 Evaluation Rules:
 - If the student has made a genuine effort and addressed the core requirements, GIVE THEM A PASS (Score >= 60).
+- If files are uploaded (hasFiles: true), assume the detailed work is contained within those files.
+- If the file names (${fileNames || 'none'}) match the task requirements (e.g., reports, slides, code), grant a PASS.
 - Only FAIL if the submission is completely irrelevant, empty, or has high plagiarism (>50%).
-- If multiple files or a GitHub link are provided, assume the work is distributed across them.
-- Provide actionable and positive improvements.
-- Be encouraging in your feedback.`;
+- Be encouraging and provide actionable improvements.`;
 
   const userPrompt = `Evaluate this internship task submission:
 
@@ -136,8 +136,9 @@ REQUIREMENTS: ${(taskRequirements || []).join('; ')}
 STUDENT SUBMISSION:
 Message: ${submissionMessage || 'No message provided'}
 ${githubLink ? `GitHub Link: ${githubLink}` : ''}
+${hasFiles ? `Uploaded Files: ${fileNames}` : 'No files uploaded'}
 
-Evaluate the quality, completeness, and originality. Respond ONLY with JSON.`;
+Evaluate the quality based on the message and the fact that work was submitted in the listed files. Respond ONLY with JSON.`;
 
   try {
     const content = await callGroq(systemPrompt, userPrompt, { temperature: 0.3, max_tokens: 800 });

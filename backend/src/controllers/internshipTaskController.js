@@ -313,6 +313,8 @@ exports.submitTask = async (req, res) => {
         taskRequirements: task.requirements,
         submissionMessage: message || '',
         githubLink: githubLink || '',
+        hasFiles: uploadedFiles.length > 0,
+        fileNames: uploadedFiles.map(f => f.name).join(', ')
       });
 
       task.evaluation = {
