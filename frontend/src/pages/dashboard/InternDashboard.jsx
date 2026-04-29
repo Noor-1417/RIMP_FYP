@@ -340,10 +340,8 @@ export const InternDashboard = () => {
                   <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
                     Enroll in a course and complete tasks to start receiving conceptual assessments.
                   </p>
-                </div>
-              )}
-            </motion.div>
-
+            )}
+          </motion.div>
 
         {/* ══ QUICK ACTIONS ══════════════════════════════════ */}
         <motion.div {...fade(0.55)} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
