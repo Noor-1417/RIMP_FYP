@@ -6,10 +6,43 @@ const errorHandler = require('./middleware/errorHandler');
 const paymentController = require('./controllers/paymentController');
 
 // Connect to MongoDB
-connectDB();
+const dbPromise = connectDB();
 
 // Initialize express app
 const app = express();
+
+// Middleware to ensure DB connection before any request
+app.use(async (req, res, next) => {
+  try {
+    await dbPromise;
+    next();
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Database connection failed', error: err.message });
+  }
+});
+
+// Temporary route to seed admin user in the cloud database
+app.get('/api/seed-admin', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    const adminExists = await User.findOne({ role: 'admin' });
+    if (adminExists) {
+      return res.json({ success: true, message: 'Admin already exists' });
+    }
+    
+    const admin = new User({
+      name: 'Admin',
+      email: process.env.ADMIN_EMAIL || 'admin@rimp.com',
+      password: process.env.ADMIN_PASSWORD || 'Admin@123456',
+      role: 'admin'
+    });
+    
+    await admin.save();
+    res.json({ success: true, message: 'Admin user created successfully in the cloud database' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // Middleware
 const allowedOrigins = [
