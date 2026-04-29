@@ -1,5 +1,11 @@
 import { create } from 'zustand';
 
+export const useAuthStore = create((set) => ({
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  isLoading: false,
+  error: null,
   isInitialized: false,
   
   setInitialized: (val) => set({ isInitialized: val }),
@@ -31,11 +37,15 @@ import { create } from 'zustand';
     const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
 
     if (storedToken && storedUser) {
-      set({
-        user: JSON.parse(storedUser),
-        token: storedToken,
-        isAuthenticated: true,
-      });
+      try {
+        set({
+          user: JSON.parse(storedUser),
+          token: storedToken,
+          isAuthenticated: true,
+        });
+      } catch (e) {
+        console.error('Error parsing stored user', e);
+      }
     }
     set({ isInitialized: true });
   },
