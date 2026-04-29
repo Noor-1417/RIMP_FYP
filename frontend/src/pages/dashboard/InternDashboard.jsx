@@ -66,47 +66,42 @@ export const InternDashboard = () => {
   const [quizzes,      setQuizzes]      = useState([]);
   const [quizData,     setQuizData]     = useState(null);
   const [application,  setApplication]  = useState(null);
-  const [loading,      setLoading]      = useState(true);
   const hasLoaded = useRef(false);
 
   const load = useCallback(async () => {
-    if (!user || hasLoaded.current) return;
-    
-    // Mark as loaded immediately to prevent concurrent loops
+    // Aggressive guard: if we've tried once, never try again in this mount cycle
+    if (!user?._id || hasLoaded.current) return;
     hasLoaded.current = true;
     
     try {
-      setLoading(true);
-      
-      // Load progress and enrollments
+      // Load everything but don't let failures trigger a re-render loop
       const [pRes, eRes] = await Promise.all([
-        internshipTaskService.getWeeklyProgress().catch(() => ({ data: { success: true, data: null } })),
-        internshipTaskService.getMyEnrollments().catch(() => ({ data: { success: true, enrollments: [] } })),
+        internshipTaskService.getWeeklyProgress().catch(() => null),
+        internshipTaskService.getMyEnrollments().catch(() => null),
       ]);
 
-      if (pRes.data?.success) setProgress(pRes.data.data);
-      if (eRes.data?.success) setEnrollments(eRes.data.enrollments || []);
+      if (pRes?.data?.success) setProgress(pRes.data.data);
+      if (eRes?.data?.success) setEnrollments(eRes.data.enrollments || []);
       
       // Fetch available quizzes (Optional)
-      try {
-        const qRes = await quizService.getAvailable();
-        if (qRes.data?.success) {
-          setQuizzes(qRes.data.data || []);
-          setQuizData(qRes.data);
-        }
-      } catch (_) {}
+      quizService.getAvailable()
+        .then(res => {
+          if (res.data?.success) {
+            setQuizzes(res.data.data || []);
+            setQuizData(res.data);
+          }
+        })
+        .catch(() => {});
 
       // Fetch user application (Optional)
-      try {
-        const aRes = await api.get(`/applications/user/${user._id}`);
-        if (aRes.data?.data) setApplication(aRes.data.data);
-      } catch (_) {}
+      api.get(`/applications/user/${user._id}`)
+        .then(res => {
+          if (res.data?.data) setApplication(res.data.data);
+        })
+        .catch(() => {});
       
     } catch (err) {
-      console.error('Dashboard load error:', err);
-      // Don't show toast for every little thing to avoid annoying loops
-    } finally {
-      setLoading(false);
+      console.warn('Dashboard non-critical load issue:', err.message);
     }
   }, [user?._id]);
 
