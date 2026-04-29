@@ -300,10 +300,12 @@ function App() {
         <Route
           path="/"
           element={
-            isAuthenticated ? (
-              user?.role === 'admin' ? <AdminDashboard /> : <InternDashboard />
-            ) : (
+            !isAuthenticated ? (
               <LandingPage />
+            ) : user?.role === 'admin' ? (
+              <AdminDashboard />
+            ) : (
+              <InternDashboard />
             )
           }
         />

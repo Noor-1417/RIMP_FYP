@@ -69,12 +69,17 @@ export const InternDashboard = () => {
   const hasLoaded = useRef(false);
 
   const load = useCallback(async () => {
-    // Aggressive guard: if we've tried once, never try again in this mount cycle
+    // Persistent guard: don't reload if we already have data in this session
     if (!user?._id || hasLoaded.current) return;
+    
+    // Check if we fetched very recently (within 5 seconds) to prevent fast loops
+    const lastFetch = sessionStorage.getItem(`last_fetch_${user._id}`);
+    if (lastFetch && Date.now() - parseInt(lastFetch) < 5000) return;
+
     hasLoaded.current = true;
+    sessionStorage.setItem(`last_fetch_${user._id}`, Date.now().toString());
     
     try {
-      // Load everything but don't let failures trigger a re-render loop
       const [pRes, eRes] = await Promise.all([
         internshipTaskService.getWeeklyProgress().catch(() => null),
         internshipTaskService.getMyEnrollments().catch(() => null),
@@ -83,7 +88,6 @@ export const InternDashboard = () => {
       if (pRes?.data?.success) setProgress(pRes.data.data);
       if (eRes?.data?.success) setEnrollments(eRes.data.enrollments || []);
       
-      // Fetch available quizzes (Optional)
       quizService.getAvailable()
         .then(res => {
           if (res.data?.success) {
@@ -93,7 +97,6 @@ export const InternDashboard = () => {
         })
         .catch(() => {});
 
-      // Fetch user application (Optional)
       api.get(`/applications/user/${user._id}`)
         .then(res => {
           if (res.data?.data) setApplication(res.data.data);
@@ -101,7 +104,7 @@ export const InternDashboard = () => {
         .catch(() => {});
       
     } catch (err) {
-      console.warn('Dashboard non-critical load issue:', err.message);
+      console.warn('Dashboard load handled');
     }
   }, [user?._id]);
 
